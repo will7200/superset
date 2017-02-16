@@ -1074,6 +1074,61 @@ class BigNumberViz(BaseViz):
             'compare_suffix': form_data.get('compare_suffix', ''),
         }
 
+class MakeBoxViz(BaseViz):
+    viz_type = "make_box"
+    verbose_name = _("MakeBox")
+    fieldsets = ({
+        'label': _("GROUP BY"),
+        'description': _('Use this section if you want a query that aggregates'),
+        'fields': ('groupby', 'metrics')
+    }, {
+        'label': _("NOT GROUPED BY"),
+        'description': _('Use this section if you want to query atomic rows'),
+        'fields': ('all_columns', 'order_by_cols'),
+    }, {
+        'label': _("Options"),
+        'fields': (
+            'table_timestamp_format',
+            'row_limit',
+            'page_length',
+            ('include_search', 'table_filter'),
+        )
+    })
+    form_overrides = ({
+        'metrics': {
+            'default': [],
+        },
+    })
+    is_timeseries = False
+
+    def query_obj(self):
+        d = super(TableViz, self).query_obj()
+        fd = self.form_data
+        if fd.get('all_columns') and (fd.get('groupby') or fd.get('metrics')):
+            raise Exception(
+                "Choose either fields to [Group By] and [Metrics] or "
+                "[Columns], not both")
+        if fd.get('all_columns'):
+            d['columns'] = fd.get('all_columns')
+            d['groupby'] = []
+            order_by_cols = fd.get('order_by_cols') or []
+            d['orderby'] = [json.loads(t) for t in order_by_cols]
+        return d
+
+    def get_data(self):
+        df = self.get_df()
+        if (
+                self.form_data.get("granularity") == "all" and
+                DTTM_ALIAS in df):
+            del df[DTTM_ALIAS]
+
+        return dict(
+            records=df.to_dict(orient="records"),
+            columns=list(df.columns),
+        )
+
+    def json_dumps(self, obj):
+        return json.dumps(obj, default=utils.json_iso_dttm_ser)
 
 class BigNumberTotalViz(BaseViz):
 
@@ -2243,6 +2298,7 @@ viz_types_list = [
     ParallelCoordinatesViz,
     HeatmapViz,
     BoxPlotViz,
+    MakeBoxViz,
     TreemapViz,
     CalHeatmapViz,
     HorizonViz,
