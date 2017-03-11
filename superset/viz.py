@@ -90,8 +90,7 @@ class BaseViz(object):
         # parsing logic.
         if df is None or df.empty:
             self.status = utils.QueryStatus.FAILED
-            if not self.error_message:
-                self.error_message = "No data."
+            self.error_message = "No data."
             return pd.DataFrame()
         else:
             if DTTM_ALIAS in df.columns:
@@ -826,11 +825,13 @@ class BigNumberTotalViz(BaseViz):
 
     def query_obj(self):
         d = super(BigNumberTotalViz, self).query_obj()
+        drilldown = self.form_data.get('drillDownEndpoint')
         metric = self.form_data.get('metric')
         if not metric:
             raise Exception("Pick a metric!")
         d['metrics'] = [self.form_data.get('metric')]
         self.form_data['metric'] = metric
+        self.form_data['drilldown'] = drilldown
         return d
 
     def get_data(self, df):

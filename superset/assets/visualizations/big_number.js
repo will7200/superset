@@ -1,6 +1,10 @@
 import d3 from 'd3';
 import { formatDate } from '../javascripts/modules/dates';
-
+import ModalDrill from './modal';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import axios from 'axios';
+import urlLib from 'url';
 require('./big_number.css');
 
 function bigNumberVis(slice, payload) {
@@ -9,12 +13,13 @@ function bigNumberVis(slice, payload) {
   div.html(''); // reset
   const fd = slice.formData;
   const json = payload.data;
-
+  console.log(slice);
   const f = d3.format(fd.y_axis_format);
   const fp = d3.format('+.1%');
   const width = slice.width();
   const height = slice.height();
   const svg = div.append('svg');
+  const modal = div.append('div').attr("class","modal");
   svg.attr('width', width);
   svg.attr('height', height);
   const data = json.data;
@@ -70,7 +75,7 @@ function bigNumberVis(slice, payload) {
   .attr('id', 'bigNumber')
   .style('font-weight', 'bold')
   .style('cursor', 'pointer')
-  .text(f(v))
+  .text(v)
   .style('font-size', d3.min([height, width]) / 3.5)
   .style('text-anchor', 'middle')
   .attr('fill', 'black');
@@ -85,7 +90,26 @@ function bigNumberVis(slice, payload) {
     .style('font-size', d3.min([height, width]) / 8)
     .style('text-anchor', 'middle');
   }
-
+  var datam = null;
+  var that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name} modalBody={datam}/>,modal.node());
+  div.on('click',function(){
+    axios.get(slice.formData.drillDownEndpoint)
+	.then(function(response){
+	var newURL = response.request.responseURL;
+	newURL = newURL.replace('/explore/','/explore_json/');
+        axios.get(newURL)
+	    .then(function(response){
+                datam = response.data.data;
+                datam = JSON.stringify(datam);
+		console.log(urlLib.parse(newURL,true));
+		that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name} modalBody={datam}/>,modal.node());
+		})
+	})
+	.catch(function(error){
+	console.log(error);
+	});
+    that.open();
+  });
   if (fd.viz_type === 'big_number') {
     // Drawing trend line
 

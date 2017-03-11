@@ -9,7 +9,7 @@ import '../stylesheets/react-select/select.less';
 import { Button } from 'react-bootstrap';
 
 import './filter_box.css';
-import { TIME_CHOICES } from './constants.js';
+import { TIME_CHOICES} from './constants.js';
 
 const propTypes = {
   origSelectedValues: React.PropTypes.object,
@@ -47,6 +47,7 @@ class FilterBox extends React.Component {
         vals = options.value;
       }
     }
+    console.log(vals)
     const selectedValues = Object.assign({}, this.state.selectedValues);
     selectedValues[filter] = vals;
     this.setState({ selectedValues, hasChanged: true });
@@ -61,6 +62,7 @@ class FilterBox extends React.Component {
         if (!choices.includes(val)) {
           choices.push(val);
         }
+         
         const options = choices.map((s) => ({ value: s, label: s }));
         return (
           <div className="m-b-5" key={field}>
@@ -129,7 +131,6 @@ FilterBox.defaultProps = defaultProps;
 function filterBox(slice, payload) {
   const d3token = d3.select(slice.selector);
   d3token.selectAll('*').remove();
-
   // filter box should ignore the dashboard's filters
   // const url = slice.jsonEndpoint({ extraFilters: false });
   const fd = slice.formData;

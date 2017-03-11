@@ -450,6 +450,12 @@ const visTypes = {
           ['y_axis_format'],
         ],
       },
+      {
+	label: 'Drilldown Area',
+	controlSetRows: [
+	 ['drillDownEndpoint'],
+	],
+      },
     ],
     controlOverrides: {
       y_axis_format: {
