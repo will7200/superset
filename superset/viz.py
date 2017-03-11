@@ -95,7 +95,7 @@ class BaseViz(object):
         """Returns a pandas dataframe based on the query object"""
         if not query_obj:
             query_obj = self.query_obj()
-
+        logging.info(query_obj)
         self.error_msg = ""
         self.results = None
 
@@ -136,9 +136,15 @@ class BaseViz(object):
 
     def get_extra_filters(self):
         extra_filters = self.form_data.get('extra_filters')
+        if extra_filters:
+            return json.loads(extra_filters)
         if not extra_filters:
-            return {}
-        return json.loads(extra_filters)
+            filters = self.form_data.get('filters')
+            extra_filters = {}
+            for x in filters:
+                if x['col'] in ['__from','__to'] and x['val'] != None:
+                    extra_filters[x['col']] = x['val']
+        return extra_filters
 
     def query_obj(self):
         """Building a query object"""
@@ -156,6 +162,7 @@ class BaseViz(object):
         since = (
             extra_filters.get('__from') or form_data.get("since", "1 year ago")
         )
+        logging.info(form_data)
         from_dttm = utils.parse_human_datetime(since)
         now = datetime.now()
         if from_dttm > now:
@@ -824,11 +831,13 @@ class BigNumberTotalViz(BaseViz):
 
     def query_obj(self):
         d = super(BigNumberTotalViz, self).query_obj()
+        drilldown = self.form_data.get('drillDownEndpoint')
         metric = self.form_data.get('metric')
         if not metric:
             raise Exception("Pick a metric!")
         d['metrics'] = [self.form_data.get('metric')]
         self.form_data['metric'] = metric
+        self.form_data['drilldown'] = drilldown
         return d
 
     def get_data(self, df):

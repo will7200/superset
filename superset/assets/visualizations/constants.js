@@ -1,6 +1,8 @@
 export const TIME_CHOICES = [
   '1 hour ago',
   '12 hours ago',
+  'Today midnight',
+  'Tomorrow Midnight',
   '1 day ago',
   '7 days ago',
   '28 days ago',

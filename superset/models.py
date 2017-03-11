@@ -1366,7 +1366,6 @@ class SqlaTable(Model, Datasource, AuditMixinNullable, ImportMixin):
                 groupby_exprs += [timestamp]
 
             time_filter = dttm_col.get_time_filter(from_dttm, to_dttm)
-
         select_exprs += metrics_exprs
         qry = select(select_exprs)
 
@@ -1453,7 +1452,6 @@ class SqlaTable(Model, Datasource, AuditMixinNullable, ImportMixin):
             qry.compile(
                 engine, compile_kwargs={"literal_binds": True},),
         )
-        logging.info(sql)
         sql = sqlparse.format(sql, reindent=True)
         return sql
 

@@ -117,6 +117,8 @@ function tableVis(slice, payload) {
           d3.select(this).classed('filtered', false);
         } else {
           d3.select(this).classed('filtered', true);
+          console.log(d.col)
+          console.log([d.val])
           slice.addFilter(d.col, [d.val]);
         }
       }

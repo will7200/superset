@@ -681,7 +681,12 @@ export const controls = {
                  'complex expression, parenthesis and anything else ' +
                  'supported by the backend it is directed towards.',
   },
-
+  drillDownEndpoint: {
+    type: 'TextControl',
+    label: 'Drilldown Json Endpoint',
+    default: '',
+    description: 'Needed for drilldown endpoint'
+  },
   having: {
     type: 'TextControl',
     label: 'Custom HAVING clause',

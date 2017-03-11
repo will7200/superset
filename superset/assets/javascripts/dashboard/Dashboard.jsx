@@ -129,10 +129,24 @@ export function dashboardContainer(dashboard) {
       $('#alert-container').html('');
     },
     loadPreSelectFilters() {
+      var defaultFilters = this.metadata.default_Filters;
+      var that = this;
+      defaultFilters.map(function(obj) {
+	var sliceID = -1;
+	that.slices.map(function(slice){
+	  if(slice.slice_name == obj.slice_name){
+		sliceID = slice.slice_id;
+	  }
+	});
+	if (sliceID != -1){
+	   that.setFilter(sliceID,obj.col,obj.val,false,false);
+	}
+	});
       try {
         const filters = JSON.parse(px.getParam('preselect_filters') || '{}');
         for (const sliceId in filters) {
           for (const col in filters[sliceId]) {
+            console.log(sliceId,col,filters[sliceId][col]);
             this.setFilter(sliceId, col, filters[sliceId][col], false, false);
           }
         }
@@ -201,7 +215,7 @@ export function dashboardContainer(dashboard) {
       if (refresh) {
         this.refreshExcept(sliceId);
       }
-      this.updateFilterParamsInUrl();
+      //this.updateFilterParamsInUrl();
     },
     readFilters() {
       // Returns a list of human readable active filters
