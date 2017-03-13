@@ -4,6 +4,9 @@ const utils = require('./utils');
 // vis sources
 /* eslint camel-case: 0 */
 import vizMap from '../../visualizations/main.js';
+import axios from 'axios';
+import { getExploreUrl } from '../explorev2/exploreUtils';
+import { applyDefaultFormData } from '../explorev2/stores/store';
 
 /* eslint wrap-iife: 0*/
 const px = function () {
@@ -55,12 +58,15 @@ const px = function () {
   }
   const Slice = function (data, controller) {
     let timer;
-    const token = $('#' + data.token);
-    const containerId = data.token + '_con';
+    const token = $('#token_' + data.slice_id);
+    const containerId = 'con_' + data.slice_id;
     const selector = '#' + containerId;
     const container = $(selector);
     const sliceId = data.slice_id;
-    const origJsonEndpoint = data.json_endpoint;
+    const drilldown = data.drilldown
+    const formData = applyDefaultFormData(data.form_data);
+    const jsonEndpoint = getExploreUrl(formData, 'json');
+    const origJsonEndpoint = jsonEndpoint;
     let dttm = 0;
     const stopwatch = function () {
       dttm += 10;
@@ -70,12 +76,14 @@ const px = function () {
     let qrystr = '';
     slice = {
       data,
+      formData,
       container,
       containerId,
       selector,
+      drilldown,
       querystring() {
         const parser = document.createElement('a');
-        parser.href = data.json_endpoint;
+        parser.href = jsonEndpoint;
         if (controller.type === 'dashboard') {
           parser.href = origJsonEndpoint;
           let flts = controller.effectiveExtraFilters(sliceId);
@@ -87,6 +95,21 @@ const px = function () {
           qrystr = '?' + $('#query').serialize();
         }
         return qrystr;
+      },
+      getNextquery() {
+        let qrystr = ''
+        if (this.drilldown != null){
+	    var level = this.currentLevel();
+            level += 1;
+            var url = this.drilldown[level];
+            url = getExploreUrl(url,'json');
+            const parser = document.createElement('a');
+            parser.href = url;
+            let flts = controller.effectiveExtraFilters(sliceId);
+            flts = encodeURIComponent(JSON.stringify(flts));
+            qrystr = parser.pathname + parser.search + '&extra_filters=' + flts;
+        }
+	return qrystr
       },
       getWidgetHeader() {
         return this.container.parents('div.widget').find('.chart-header');
@@ -100,7 +123,7 @@ const px = function () {
       },
       jsonEndpoint() {
         const parser = document.createElement('a');
-        parser.href = data.json_endpoint;
+        parser.href = jsonEndpoint;
         let endpoint = parser.pathname + this.querystring();
         if (endpoint.charAt(0) !== '/') {
           // Known issue for IE <= 11:
@@ -114,8 +137,11 @@ const px = function () {
       d3format(col, number) {
         // uses the utils memoized d3format function and formats based on
         // column level defined preferences
-        const format = data.column_formats[col];
-        return utils.d3format(format, number);
+        if (data.column_formats) {
+          const format = data.column_formats[col];
+          return utils.d3format(format, number);
+        }
+        return utils.d3format('.3s', number);
       },
       /* eslint no-shadow: 0 */
       always(data) {
@@ -224,7 +250,7 @@ const px = function () {
         $('#timer').addClass('label-warning');
         $.getJSON(this.jsonEndpoint(), queryResponse => {
           try {
-            vizMap[data.form_data.viz_type](this, queryResponse);
+            vizMap[formData.viz_type](this, queryResponse);
             this.done(queryResponse);
           } catch (e) {
             this.error('An error occurred while rendering the visualization: ' + e);
@@ -233,14 +259,44 @@ const px = function () {
           this.error(err.responseText, err);
         });
       },
+      renderNext(node){
+        var that = this
+        axios.get(this.getNextquery())
+	     .then(function(response){
+		try {
+                  console.log(that)
+                  console.log(node)
+                  let formData = that.drilldown["0"]
+		  if(node != null){
+			that.newNode = node;
+		  }
+		  vizMap[formData.viz_type](that,response);
+		}catch (e) {
+                  console.log(e)
+            	  that.error('An error occurred while rendering the visualization: ' + e);
+          	}
+	       })
+	     .catch(function(error){
+               console.log(error);
+              });
+      },
       resize() {
         this.render();
       },
-      addFilter(col, vals) {
-        controller.addFilter(sliceId, col, vals);
+      addFilter(col, vals, merge = true, refresh = true) {
+        controller.addFilter(sliceId, col, vals, merge, refresh);
       },
-      setFilter(col, vals) {
-        controller.setFilter(sliceId, col, vals);
+      adddrillDown(col, vals, merge = true, refresh = true) {
+        controller.drillDown(sliceId, col, vals, merge ,refresh);
+      },
+      drill(level){
+        controller.drill(sliceId,level);
+      },
+      currentLevel(){
+	return controller.currentLevel(sliceId);
+      },
+      setFilter(col, vals, refresh = true) {
+        controller.setFilter(sliceId, col, vals, refresh);
       },
       getFilters() {
         return controller.filters[sliceId];

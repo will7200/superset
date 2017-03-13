@@ -1,21 +1,24 @@
 import d3 from 'd3';
 import { formatDate } from '../javascripts/modules/dates';
-
+import ModalDrill from './modal';
+import React from 'react';
+import ReactDOM from 'react-dom';
+import axios from 'axios';
+import urlLib from 'url';
 require('./big_number.css');
 
 function bigNumberVis(slice, payload) {
   const div = d3.select(slice.selector);
   // Define the percentage bounds that define color from red to green
   div.html(''); // reset
-
-  const fd = payload.form_data;
+  const fd = slice.formData;
   const json = payload.data;
-
   const f = d3.format(fd.y_axis_format);
   const fp = d3.format('+.1%');
   const width = slice.width();
   const height = slice.height();
   const svg = div.append('svg');
+  const modal = div.append('div').attr("class","modal");
   svg.attr('width', width);
   svg.attr('height', height);
   const data = json.data;
@@ -71,7 +74,7 @@ function bigNumberVis(slice, payload) {
   .attr('id', 'bigNumber')
   .style('font-weight', 'bold')
   .style('cursor', 'pointer')
-  .text(f(v))
+  .text(v)
   .style('font-size', d3.min([height, width]) / 3.5)
   .style('text-anchor', 'middle')
   .attr('fill', 'black');
@@ -86,7 +89,14 @@ function bigNumberVis(slice, payload) {
     .style('font-size', d3.min([height, width]) / 8)
     .style('text-anchor', 'middle');
   }
+  var datam = null;
+  var that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name} modalBody={datam}/>,modal.node());
+  div.on('click',function(){
+    console.log(that);
+    slice.renderNext(modal.node())
 
+    that.open();
+  });
   if (fd.viz_type === 'big_number') {
     // Drawing trend line
 

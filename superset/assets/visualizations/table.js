@@ -11,20 +11,31 @@ import dt from 'datatables.net-bs';
 dt(window, $);
 
 function tableVis(slice, payload) {
-  const container = $(slice.selector);
+  let container
+  if(slice.newNode){
+	container = $(slice.newNode)
+	}
+	else{
+	container = $(slice.selector)
+	}
+  
   const fC = d3.format('0,000');
   let timestampFormatter;
+  var data = payload.data;
+  const fd = slice.formData;
+  if(!("records" in data)){
+    	data = data.data
+  }
 
-  const data = payload.data;
-  const fd = payload.form_data;
   // Removing metrics (aggregates) that are strings
   const realMetrics = [];
+  let metrics = fd.metrics || [];
   for (const k in data.records[0]) {
-    if (fd.metrics.indexOf(k) > -1 && !isNaN(data.records[0][k])) {
+    if (metrics.indexOf(k) > -1 && !isNaN(data.records[0][k])) {
       realMetrics.push(k);
     }
   }
-  const metrics = realMetrics;
+  metrics = realMetrics;
 
   function col(c) {
     const arr = [];
@@ -44,7 +55,7 @@ function tableVis(slice, payload) {
     timestampFormatter = timeFormatFactory(fd.table_timestamp_format);
   }
 
-  const div = d3.select(slice.selector);
+  const div = d3.select(slice.newNode)||d3.select(slice.selector);
   div.html('');
   const table = div.append('table')
     .classed(
@@ -67,18 +78,24 @@ function tableVis(slice, payload) {
     .enter()
     .append('tr')
     .selectAll('td')
-    .data((row) => data.columns.map((c) => {
-      let val = row[c];
+    .data(row => data.columns.map(c => {
+      const val = row[c];
+      let html;
+      const isMetric = metrics.indexOf(c) >= 0;
       if (c === 'timestamp') {
-        val = timestampFormatter(val);
+        html = timestampFormatter(val);
       }
       if (typeof(val) === 'string') {
-        val = `<span class="like-pre">${val}</span>`;
+        html = `<span class="like-pre">${val}</span>`;
+      }
+      if (isMetric) {
+        html = slice.d3format(c, val);
       }
       return {
         col: c,
         val,
-        isMetric: metrics.indexOf(c) >= 0,
+        html,
+        isMetric,
       };
     }))
     .enter()
@@ -110,6 +127,8 @@ function tableVis(slice, payload) {
           d3.select(this).classed('filtered', false);
         } else {
           d3.select(this).classed('filtered', true);
+          console.log(d.col)
+          console.log([d.val])
           slice.addFilter(d.col, [d.val]);
         }
       }
@@ -117,12 +136,7 @@ function tableVis(slice, payload) {
     .style('cursor', function (d) {
       return (!d.isMetric) ? 'pointer' : '';
     })
-    .html((d) => {
-      if (d.isMetric) {
-        return slice.d3format(d.col, d.val);
-      }
-      return d.val;
-    });
+    .html(d => d.html ? d.html : d.val);
   const height = slice.height();
   let paging = false;
   let pageLength;
@@ -143,8 +157,8 @@ function tableVis(slice, payload) {
   fixDataTableBodyHeight(
       container.find('.dataTables_wrapper'), height);
   // Sorting table by main column
-  if (fd.metrics.length > 0) {
-    const mainMetric = fd.metrics[0];
+  if (metrics.length > 0) {
+    const mainMetric = metrics[0];
     datatable.column(data.columns.indexOf(mainMetric)).order('desc').draw();
   }
   container.parents('.widget').find('.tooltip').remove();

@@ -7,7 +7,7 @@ import throttle from 'lodash.throttle';
 
 const d3 = require('d3');
 const nv = require('nvd3');
-import { TIME_STAMP_OPTIONS } from '../javascripts/explorev2/stores/fields';
+import { TIME_STAMP_OPTIONS } from '../javascripts/explorev2/stores/controls';
 
 // CSS
 require('../node_modules/nvd3/build/nv.d3.min.css');
@@ -96,7 +96,7 @@ function nvd3Vis(slice, payload) {
   }
 
   let width = slice.width();
-  const fd = payload.form_data;
+  const fd = slice.formData;
 
   const barchartWidth = function () {
     let bars;

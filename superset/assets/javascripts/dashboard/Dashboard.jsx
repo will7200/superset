@@ -13,7 +13,6 @@ import Header from './components/Header';
 
 require('bootstrap');
 require('../../stylesheets/dashboard.css');
-require('../superset-select2.js');
 
 export function getInitialState(dashboardData, context) {
   const dashboard = Object.assign({ context }, utils.controllerInterface, dashboardData);
@@ -27,7 +26,7 @@ export function getInitialState(dashboardData, context) {
   }
   dashboard.curUserId = dashboard.context.user_id;
   dashboard.refreshTimer = null;
-
+  console.log(dashboardData)
   const state = {
     dashboard,
   };
@@ -83,9 +82,6 @@ function initDashboardView(dashboard) {
   );
   $('div.grid-container').css('visibility', 'visible');
 
-  $('.select2').select2({
-    dropdownAutoWidth: true,
-  });
   $('div.widget').click(function (e) {
     const $this = $(this);
     const $target = $(e.target);
@@ -106,6 +102,7 @@ export function dashboardContainer(dashboard) {
   return Object.assign({}, dashboard, {
     type: 'dashboard',
     filters: {},
+    DrillDowns: {},
     init() {
       this.sliceObjects = [];
       dashboard.slices.forEach((data) => {
@@ -133,10 +130,24 @@ export function dashboardContainer(dashboard) {
       $('#alert-container').html('');
     },
     loadPreSelectFilters() {
+      var defaultFilters = this.metadata.default_Filters;
+      var that = this;
+      defaultFilters.map(function(obj) {
+	var sliceID = -1;
+	that.slices.map(function(slice){
+	  if(slice.slice_name == obj.slice_name){
+		sliceID = slice.slice_id;
+	  }
+	});
+	if (sliceID != -1){
+	   that.setFilter(sliceID,obj.col,obj.val,false,false);
+	}
+	});
       try {
         const filters = JSON.parse(px.getParam('preselect_filters') || '{}');
         for (const sliceId in filters) {
           for (const col in filters[sliceId]) {
+            console.log(sliceId,col,filters[sliceId][col]);
             this.setFilter(sliceId, col, filters[sliceId][col], false, false);
           }
         }
@@ -165,9 +176,7 @@ export function dashboardContainer(dashboard) {
       }
     },
     effectiveExtraFilters(sliceId) {
-      // Summarized filter, not defined by sliceId
-      // returns k=field, v=array of values
-      const f = {};
+      const f = [];
       const immuneSlices = this.metadata.filter_immune_slices || [];
       if (sliceId && immuneSlices.includes(sliceId)) {
         // The slice is immune to dashboard fiterls
@@ -185,7 +194,11 @@ export function dashboardContainer(dashboard) {
       for (const filteringSliceId in this.filters) {
         for (const field in this.filters[filteringSliceId]) {
           if (!immuneToFields.includes(field)) {
-            f[field] = this.filters[filteringSliceId][field];
+            f.push({
+              col: field,
+              op: 'in',
+              val: this.filters[filteringSliceId][field],
+            });
           }
         }
       }
@@ -203,8 +216,28 @@ export function dashboardContainer(dashboard) {
       if (refresh) {
         this.refreshExcept(sliceId);
       }
-      this.updateFilterParamsInUrl();
+      //this.updateFilterParamsInUrl();
     },
+    adddrillDown(sliceId, col, vals, merge = true, refresh = true){
+      console.log(this)
+      if(!(sliceId in this.DrillDowns)){
+	this.DrillDowns[sliceId] = {"currentLevel":0,"drillParams":[{"level":0,"url":12}]};
+      }
+      var newLevel = this.DrillDowns[sliceId]["currentLevel"] + 1
+      this.DrillDowns[sliceId]["drillParams"].push({"col":col,"vals":vals,"level":newLevel})
+    },
+    drill(sliceId,level){
+      if((sliceId in this.DrillDowns)){
+	if (level <= this.DrillDowns[sliceId]["drillParams"].length && level >= 0){
+	    this.DrillDowns[sliceId]["currentLevel"] = level
+	}
+      }
+    },
+    currentLevel(sliceId){
+      if(sliceId in this.DrillDowns){
+        return this.DrillDowns[sliceId]["currentLevel"]
+      } else return -1
+     },      
     readFilters() {
       // Returns a list of human readable active filters
       return JSON.stringify(this.filters, null, '  ');
