@@ -682,10 +682,18 @@ export const controls = {
                  'supported by the backend it is directed towards.',
   },
   drillDownEndpoint: {
-    type: 'TextControl',
-    label: 'Drilldown Json Endpoint',
-    default: '',
+    type: 'SelectControl',
+    label: 'Drilldown Slice ID',
+    default: [],
+    multi: true,
+    freeForm: true,
     description: 'Needed for drilldown endpoint'
+  },
+  drillWhere: {
+    type: 'TextControl',
+    label: 'DrillDown  WHERE clause',
+    default: '',
+    description: 'Custom where clause for DrillDowns' 
   },
   having: {
     type: 'TextControl',

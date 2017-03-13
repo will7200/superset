@@ -128,6 +128,8 @@ export const controllerInterface = {
   getFilters: () => false,
   clearFilter: () => {},
   removeFilter: () => {},
+  adddrillDown: () => {},
+  drill: () => {},
   filters: {},
 };
 

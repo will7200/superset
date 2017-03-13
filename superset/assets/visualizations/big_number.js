@@ -13,7 +13,6 @@ function bigNumberVis(slice, payload) {
   div.html(''); // reset
   const fd = slice.formData;
   const json = payload.data;
-  console.log(slice);
   const f = d3.format(fd.y_axis_format);
   const fp = d3.format('+.1%');
   const width = slice.width();
@@ -93,21 +92,9 @@ function bigNumberVis(slice, payload) {
   var datam = null;
   var that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name} modalBody={datam}/>,modal.node());
   div.on('click',function(){
-    axios.get(slice.formData.drillDownEndpoint)
-	.then(function(response){
-	var newURL = response.request.responseURL;
-	newURL = newURL.replace('/explore/','/explore_json/');
-        axios.get(newURL)
-	    .then(function(response){
-                datam = response.data.data;
-                datam = JSON.stringify(datam);
-		console.log(urlLib.parse(newURL,true));
-		that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name} modalBody={datam}/>,modal.node());
-		})
-	})
-	.catch(function(error){
-	console.log(error);
-	});
+    console.log(that);
+    slice.renderNext(modal.node())
+
     that.open();
   });
   if (fd.viz_type === 'big_number') {
