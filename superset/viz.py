@@ -95,7 +95,6 @@ class BaseViz(object):
         """Returns a pandas dataframe based on the query object"""
         if not query_obj:
             query_obj = self.query_obj()
-        logging.info(query_obj)
         self.error_msg = ""
         self.results = None
 
@@ -162,7 +161,6 @@ class BaseViz(object):
         since = (
             extra_filters.get('__from') or form_data.get("since", "1 year ago")
         )
-        logging.info(form_data)
         from_dttm = utils.parse_human_datetime(since)
         now = datetime.now()
         if from_dttm > now:

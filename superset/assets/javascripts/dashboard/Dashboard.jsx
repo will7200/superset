@@ -26,7 +26,7 @@ export function getInitialState(dashboardData, context) {
   }
   dashboard.curUserId = dashboard.context.user_id;
   dashboard.refreshTimer = null;
-
+  console.log(dashboardData)
   const state = {
     dashboard,
   };
@@ -102,6 +102,7 @@ export function dashboardContainer(dashboard) {
   return Object.assign({}, dashboard, {
     type: 'dashboard',
     filters: {},
+    DrillDowns: {},
     init() {
       this.sliceObjects = [];
       dashboard.slices.forEach((data) => {
@@ -217,6 +218,26 @@ export function dashboardContainer(dashboard) {
       }
       //this.updateFilterParamsInUrl();
     },
+    adddrillDown(sliceId, col, vals, merge = true, refresh = true){
+      console.log(this)
+      if(!(sliceId in this.DrillDowns)){
+	this.DrillDowns[sliceId] = {"currentLevel":0,"drillParams":[{"level":0,"url":12}]};
+      }
+      var newLevel = this.DrillDowns[sliceId]["currentLevel"] + 1
+      this.DrillDowns[sliceId]["drillParams"].push({"col":col,"vals":vals,"level":newLevel})
+    },
+    drill(sliceId,level){
+      if((sliceId in this.DrillDowns)){
+	if (level <= this.DrillDowns[sliceId]["drillParams"].length && level >= 0){
+	    this.DrillDowns[sliceId]["currentLevel"] = level
+	}
+      }
+    },
+    currentLevel(sliceId){
+      if(sliceId in this.DrillDowns){
+        return this.DrillDowns[sliceId]["currentLevel"]
+      } else return -1
+     },      
     readFilters() {
       // Returns a list of human readable active filters
       return JSON.stringify(this.filters, null, '  ');

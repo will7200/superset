@@ -107,7 +107,8 @@ class ChartContainer extends React.PureComponent {
         // return filter objects from viz.formData
         {}
       ),
-
+      addDrilldown: () => {},
+      drill: () => {},
       addFilter: () => {},
 
       removeFilter: () => {},

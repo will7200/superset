@@ -4,6 +4,7 @@ const utils = require('./utils');
 // vis sources
 /* eslint camel-case: 0 */
 import vizMap from '../../visualizations/main.js';
+import axios from 'axios';
 import { getExploreUrl } from '../explorev2/exploreUtils';
 import { applyDefaultFormData } from '../explorev2/stores/store';
 
@@ -62,6 +63,7 @@ const px = function () {
     const selector = '#' + containerId;
     const container = $(selector);
     const sliceId = data.slice_id;
+    const drilldown = data.drilldown
     const formData = applyDefaultFormData(data.form_data);
     const jsonEndpoint = getExploreUrl(formData, 'json');
     const origJsonEndpoint = jsonEndpoint;
@@ -78,6 +80,7 @@ const px = function () {
       container,
       containerId,
       selector,
+      drilldown,
       querystring() {
         const parser = document.createElement('a');
         parser.href = jsonEndpoint;
@@ -92,6 +95,21 @@ const px = function () {
           qrystr = '?' + $('#query').serialize();
         }
         return qrystr;
+      },
+      getNextquery() {
+        let qrystr = ''
+        if (this.drilldown != null){
+	    var level = this.currentLevel();
+            level += 1;
+            var url = this.drilldown[level];
+            url = getExploreUrl(url,'json');
+            const parser = document.createElement('a');
+            parser.href = url;
+            let flts = controller.effectiveExtraFilters(sliceId);
+            flts = encodeURIComponent(JSON.stringify(flts));
+            qrystr = parser.pathname + parser.search + '&extra_filters=' + flts;
+        }
+	return qrystr
       },
       getWidgetHeader() {
         return this.container.parents('div.widget').find('.chart-header');
@@ -241,11 +259,41 @@ const px = function () {
           this.error(err.responseText, err);
         });
       },
+      renderNext(node){
+        var that = this
+        axios.get(this.getNextquery())
+	     .then(function(response){
+		try {
+                  console.log(that)
+                  console.log(node)
+                  let formData = that.drilldown["0"]
+		  if(node != null){
+			that.newNode = node;
+		  }
+		  vizMap[formData.viz_type](that,response);
+		}catch (e) {
+                  console.log(e)
+            	  that.error('An error occurred while rendering the visualization: ' + e);
+          	}
+	       })
+	     .catch(function(error){
+               console.log(error);
+              });
+      },
       resize() {
         this.render();
       },
       addFilter(col, vals, merge = true, refresh = true) {
         controller.addFilter(sliceId, col, vals, merge, refresh);
+      },
+      adddrillDown(col, vals, merge = true, refresh = true) {
+        controller.drillDown(sliceId, col, vals, merge ,refresh);
+      },
+      drill(level){
+        controller.drill(sliceId,level);
+      },
+      currentLevel(){
+	return controller.currentLevel(sliceId);
       },
       setFilter(col, vals, refresh = true) {
         controller.setFilter(sliceId, col, vals, refresh);

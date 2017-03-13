@@ -454,6 +454,7 @@ const visTypes = {
 	label: 'Drilldown Area',
 	controlSetRows: [
 	 ['drillDownEndpoint'],
+	 ['drillWhere'],
 	],
       },
     ],
