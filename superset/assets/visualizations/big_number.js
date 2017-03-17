@@ -89,13 +89,11 @@ function bigNumberVis(slice, payload) {
     .style('font-size', d3.min([height, width]) / 8)
     .style('text-anchor', 'middle');
   }
-  var datam = null;
-  var that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name} modalBody={datam}/>,modal.node());
+  var that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name}/>,modal.node());
   div.on('click',function(){
-    console.log(that);
-    slice.renderNext(modal.node())
-
-    that.open();
+    that.open()
+    var node1 = ReactDOM.findDOMNode(that.refs.Body)
+    slice.renderNext(node1)
   });
   if (fd.viz_type === 'big_number') {
     // Drawing trend line

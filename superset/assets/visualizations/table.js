@@ -17,7 +17,6 @@ function tableVis(slice, payload) {
 
   const data = payload.data;
   const fd = slice.formData;
-
   // Removing metrics (aggregates) that are strings
   let metrics = fd.metrics || [];
   metrics = metrics.filter(m => !isNaN(data.records[0][m]));

@@ -255,6 +255,7 @@ const px = function () {
             vizMap[formData.viz_type](this, queryResponse);
             this.done(queryResponse);
           } catch (e) {
+            console.log(e)
             this.error('An error occurred while rendering the visualization: ' + e);
           }
         }).fail(err => {
@@ -266,13 +267,18 @@ const px = function () {
         axios.get(this.getNextquery())
 	     .then(function(response){
 		try {
-                  console.log(that)
-                  console.log(node)
+                  console.log(that);
+		  let newslice = Object.assign({},that);
                   let formData = that.drilldown["0"]
 		  if(node != null){
-			that.newNode = node;
+			newslice.selector = node;
+                        newslice.container = $(node)
+		        newslice.width = function(){return 500}
+                        newslice.height = function(){return 500}
 		  }
-		  vizMap[formData.viz_type](that,response);
+                  newslice.formData = formData;
+                  console.log(newslice);
+		  vizMap[formData.viz_type](newslice,response.data);
 		}catch (e) {
                   console.log(e)
             	  that.error('An error occurred while rendering the visualization: ' + e);

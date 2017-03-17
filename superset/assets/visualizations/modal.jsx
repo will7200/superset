@@ -19,7 +19,6 @@ const defaultProps = {
   onExit: () => {},
   isButton: false,
   bsSize: null,
-  className: '',
 };
 
 export default class ModalDrill extends React.Component {
@@ -37,7 +36,6 @@ export default class ModalDrill extends React.Component {
   }
 
   open(e) {
-    e.preventDefault();
     this.props.beforeOpen();
     this.setState({ showModal: true });
   }
@@ -53,7 +51,7 @@ export default class ModalDrill extends React.Component {
         <Modal.Header closeButton>
           <Modal.Title>{this.props.modalTitle}</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body ref="Body">
           {this.props.modalBody}
         </Modal.Body>
         {this.props.modalFooter &&
@@ -67,8 +65,7 @@ export default class ModalDrill extends React.Component {
 
   render() {
     return (
-      <span className={classNames} onClick={this.open} role="button">
-        {this.props.triggerNode}
+      <span>
         {this.renderModal()}
       </span>
     );

@@ -333,6 +333,7 @@ class Slice(Model, AuditMixinNullable, ImportMixin):
                 Slice1 = session.query(Slice).filter_by(id=drillID).one()
                 if Slice1:
                     data__[str(level)] = json.loads(Slice1.params)
+                    
         if not data__:
             return None
         return data__
