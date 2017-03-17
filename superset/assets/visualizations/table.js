@@ -12,21 +12,11 @@ dt(window, $);
 
 function tableVis(slice, payload) {
   let container
-  if(slice.newNode){
-	container = $(slice.newNode)
-	}
-	else{
-	container = $(slice.selector)
-	}
-  
+  container = $(slice.selector)
   const fC = d3.format('0,000');
   let timestampFormatter;
   var data = payload.data;
   const fd = slice.formData;
-  if(!("records" in data)){
-    	data = data.data
-  }
-
   // Removing metrics (aggregates) that are strings
   const realMetrics = [];
   let metrics = fd.metrics || [];
@@ -55,7 +45,7 @@ function tableVis(slice, payload) {
     timestampFormatter = timeFormatFactory(fd.table_timestamp_format);
   }
 
-  const div = d3.select(slice.newNode)||d3.select(slice.selector);
+  const div = d3.select(slice.selector);
   div.html('');
   const table = div.append('table')
     .classed(
