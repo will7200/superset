@@ -11,11 +11,11 @@ import dt from 'datatables.net-bs';
 dt(window, $);
 
 function tableVis(slice, payload) {
-  const container = $(slice.selector);
+  let container
+  container = $(slice.selector)
   const fC = d3.format('0,000');
   let timestampFormatter;
-
-  const data = payload.data;
+  var data = payload.data;
   const fd = slice.formData;
   // Removing metrics (aggregates) that are strings
   let metrics = fd.metrics || [];
