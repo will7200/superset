@@ -529,7 +529,6 @@ class SqlaTable(Model, BaseDatasource):
             qry.compile(
                 engine, compile_kwargs={"literal_binds": True},),
         )
-        logging.info(sql)
         sql = sqlparse.format(sql, reindent=True)
         return sql
 

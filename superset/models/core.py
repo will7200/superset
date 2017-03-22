@@ -164,11 +164,28 @@ class Slice(Model, AuditMixinNullable, ImportMixin):
             'description_markeddown': self.description_markeddown,
             'edit_url': self.edit_url,
             'form_data': self.form_data,
+            'drilldown': self.drilldowns,
             'slice_id': self.id,
             'slice_name': self.slice_name,
             'slice_url': self.slice_url,
         }
-
+    @property
+    def drilldowns(self):
+        d = json.loads(self.params)
+        session = db.session
+        data__ = {}
+        level = 0
+        if 'drillDownEndpoint' in d:
+            for drillID in d['drillDownEndpoint']:
+                if not drillID.isdigit():
+                    continue
+                Slice1 = session.query(Slice).filter_by(id=drillID).one()
+                if Slice1:
+                    data__[str(level)] = json.loads(Slice1.params)
+                    
+        if not data__:
+            return None
+        return data__
     @property
     def json_data(self):
         return json.dumps(self.data)

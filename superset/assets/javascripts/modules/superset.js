@@ -99,13 +99,18 @@ const px = function () {
         if (this.drilldown != null){
 	    var level = this.currentLevel();
             level += 1;
-            var url = this.drilldown[level];
-            url = getExploreUrl(url,'json');
+            var url = Object.assign({},this.drilldown[level]);
+	    if(this.formData.drillWhere){
+		url.where += this.formData.drillWhere;
+	    }
+            let flts = controller.effectiveExtraFilters(sliceId);
+	    if(flts){
+		url.extra_filters = flts;
+	   }
+	    url = getExploreUrl(url,'json');
             const parser = document.createElement('a');
             parser.href = url;
-            let flts = controller.effectiveExtraFilters(sliceId);
-            flts = encodeURIComponent(JSON.stringify(flts));
-            qrystr = parser.pathname + parser.search + '&extra_filters=' + flts;
+            qrystr = parser.pathname + parser.search;
         }
 	return qrystr
       },
@@ -264,20 +269,24 @@ const px = function () {
       },
       renderNext(node){
         var that = this
+	if(this.drilldown === undefined | this.drilldown === null){
+		return
+	}
+	if(Object.keys(this.drilldown).length == this.currentLevel()+1){
+		return
+	}
         axios.get(this.getNextquery())
 	     .then(function(response){
 		try {
-                  console.log(that);
 		  let newslice = Object.assign({},that);
-                  let formData = that.drilldown["0"]
+                  let formData = that.drilldown[that.currentLevel()+1]
 		  if(node != null){
 			newslice.selector = node;
                         newslice.container = $(node)
-		        newslice.width = function(){return 500}
-                        newslice.height = function(){return 500}
+		        newslice.width = function(){return window.innerWidth -200}
+                        newslice.height = function(){return window.innerHeight -200}
 		  }
                   newslice.formData = formData;
-                  console.log(newslice);
 		  vizMap[formData.viz_type](newslice,response.data);
 		}catch (e) {
                   console.log(e)
@@ -303,6 +312,15 @@ const px = function () {
       currentLevel(){
 	return controller.currentLevel(sliceId);
       },
+      hasNext(){
+	if(this.drilldown === undefined | this.drilldown === null){
+                return false
+        }
+        if(Object.keys(this.drilldown).length == this.currentLevel()+1){
+                return false
+        }
+	return true;
+      },	
       setFilter(col, vals, refresh = true) {
         controller.setFilter(sliceId, col, vals, refresh);
       },

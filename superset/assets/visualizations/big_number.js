@@ -90,11 +90,13 @@ function bigNumberVis(slice, payload) {
     .style('text-anchor', 'middle');
   }
   var that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name}/>,modal.node());
-  div.on('click',function(){
-    that.open()
-    var node1 = ReactDOM.findDOMNode(that.refs.Body)
-    slice.renderNext(node1)
-  });
+  if(slice.hasNext()){
+	div.on('click',function(){
+    	that.open()
+    	var node1 = ReactDOM.findDOMNode(that.refs.Body)
+    	slice.renderNext(node1)
+  	});
+  }
   if (fd.viz_type === 'big_number') {
     // Drawing trend line
 

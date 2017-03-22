@@ -110,7 +110,7 @@ class ChartContainer extends React.PureComponent {
       addDrilldown: () => {},
       drill: () => {},
       addFilter: () => {},
-
+      hasNext: () => {},
       removeFilter: () => {},
 
       done: () => {},

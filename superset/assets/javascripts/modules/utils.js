@@ -129,6 +129,7 @@ export const controllerInterface = {
   clearFilter: () => {},
   removeFilter: () => {},
   adddrillDown: () => {},
+  hasNext: () => {},
   drill: () => {},
   filters: {},
 };
