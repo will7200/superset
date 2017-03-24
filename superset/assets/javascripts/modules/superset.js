@@ -128,8 +128,24 @@ const px = function () {
         return this.endpoint('json');
       },
       endpoint(endpointType = 'json') {
-        const formDataExtra = Object.assign({}, formData);
-        const flts = controller.effectiveExtraFilters(sliceId);
+        let formDataExtra
+        let flts
+        if (this.drilldown != null & this.currentLevel() != -1 ){
+	    formDataExtra = Object.assign({},this.drilldown[this.currentLevel()]);
+            flts = controller.drillDownFilters(sliceId);
+            if(this.formData.drillWhere){
+              formDataExtra.where += this.formData.drillWhere;
+	    }
+	    if( formDataExtra.all_columns != undefined & formDataExtra.all_columns.length > 1) {
+               const removeCols = controller.excludeDrillDownCol(sliceId);
+               let newCols  = []
+               formDataExtra.all_columns.map( column => {if(!(column in removeCols))newCols.push(column)});
+	       formDataExtra.all_columns = newCols
+	    }
+        } else {
+            formDataExtra = Object.assign({}, formData);
+            flts = controller.effectiveExtraFilters(sliceId);
+	}
         if (flts) {
           formDataExtra.extra_filters = flts;
         }
@@ -277,6 +293,7 @@ const px = function () {
 	}
         axios.get(this.getNextquery())
 	     .then(function(response){
+		console.log(response)
 		try {
 		  let newslice = Object.assign({},that);
                   let formData = that.drilldown[that.currentLevel()+1]
@@ -304,13 +321,23 @@ const px = function () {
         controller.addFilter(sliceId, col, vals, merge, refresh);
       },
       adddrillDown(col, vals, merge = true, refresh = true) {
-        controller.drillDown(sliceId, col, vals, merge ,refresh);
+        controller.adddrillDown(sliceId, col, vals, merge);
+        this.render();
       },
       drill(level){
         controller.drill(sliceId,level);
       },
       currentLevel(){
 	return controller.currentLevel(sliceId);
+      },
+      DrillLinks(){
+        let t = []
+	if (controller.currentLevel(sliceId) != -1){
+	  t = controller.readDrillDowns(sliceId)
+          let h = ['home']
+          t = h.concat(t);
+         }
+        return t
       },
       hasNext(){
 	if(this.drilldown === undefined | this.drilldown === null){

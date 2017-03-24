@@ -253,6 +253,14 @@ const visTypes = {
           ['include_search', 'table_filter'],
         ],
       },
+      {
+        label: 'Drilldown Area',
+        controlSetRows: [
+         ['drillDownEndpoint'],
+         ['drillWhere'],
+         ['drilldown_field'],
+        ],
+       },	
     ],
     controlOverrides: {
       metrics: {
@@ -429,6 +437,13 @@ const visTypes = {
           ['compare_lag'],
           ['compare_suffix'],
           ['y_axis_format'],
+        ],
+      },
+      {
+        label: 'Drilldown Area',
+        controlSetRows: [
+         ['drillDownEndpoint'],
+         ['drillWhere'],
         ],
       },
     ],

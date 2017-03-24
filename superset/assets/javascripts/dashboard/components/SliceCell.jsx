@@ -4,15 +4,21 @@ const propTypes = {
   slice: PropTypes.object.isRequired,
   removeSlice: PropTypes.func.isRequired,
   expandedSlices: PropTypes.object,
+  sliceob: PropTypes.object.isRequired,
 };
 
-function SliceCell({ expandedSlices, removeSlice, slice }) {
+class SliceCell extends React.Component {
+  render (){
+  const { expandedSlices, removeSlice, slice, sliceob} = this.props
   return (
     <div className="slice-cell" id={`${slice.slice_id}-cell`}>
       <div className="chart-header">
         <div className="row">
           <div className="col-md-12 header">
             <span>{slice.slice_name}</span>
+            <span> </span>
+            {sliceob && sliceob.DrillLinks && sliceob.DrillLinks().map((link,index) => 
+		<span onClick={() => {slice.drill(slice.slice_id,index-1)}}>{link} </span>)}
           </div>
           <div className="col-md-12 chart-controls">
             <div className="pull-right">
@@ -82,6 +88,7 @@ function SliceCell({ expandedSlices, removeSlice, slice }) {
       </div>
     </div>
   );
+ }
 }
 
 SliceCell.propTypes = propTypes;

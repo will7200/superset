@@ -125,7 +125,7 @@ function nvd3Vis(slice, payload) {
           chart.focus.xScale(d3.time.scale.utc());
           chart.x2Axis
           .showMaxMin(fd.x_axis_showminmax)
-          .staggerLabels(false);
+          .staggerLabels(false)
         } else {
           chart = nv.models.lineChart();
         }
@@ -136,6 +136,7 @@ function nvd3Vis(slice, payload) {
         chart.xAxis
         .showMaxMin(fd.x_axis_showminmax)
         .staggerLabels(false);
+        chart.y(function(d) { if(d.y === null)d.y=0;return d.y; })
         break;
 
       case 'dual_line':

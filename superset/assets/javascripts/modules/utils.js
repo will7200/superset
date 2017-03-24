@@ -99,7 +99,8 @@ export function toggleCheckbox(apiUrlPrefix, selector) {
  */
 export const fixDataTableBodyHeight = function ($tableDom, height) {
   const headHeight = $tableDom.find('.dataTables_scrollHead').height();
-  $tableDom.find('.dataTables_scrollBody').css('max-height', height - headHeight);
+  const pagination = $tableDom.find('.dataTables_paginate').height()
+  $tableDom.find('.dataTables_scrollBody').css('max-height', height - headHeight - pagination - 50);
 };
 
 export function d3format(format, number) {

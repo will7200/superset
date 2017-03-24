@@ -93,7 +93,7 @@ class GridLayout extends React.Component {
         useCSSTransforms
         draggableHandle=".drag"
       >
-        {this.state.slices.map(slice => (
+        {this.state.slices.map((slice,index) => (
           <div
             id={'slice_' + slice.slice_id}
             key={slice.slice_id}
@@ -102,6 +102,7 @@ class GridLayout extends React.Component {
           >
             <SliceCell
               slice={slice}
+              sliceob={this.props.dashboard.sliceObjects && this.props.dashboard.sliceObjects[index]}
               removeSlice={this.removeSlice.bind(this, slice.slice_id)}
               expandedSlices={this.props.dashboard.metadata.expanded_slices}
             />

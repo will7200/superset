@@ -75,11 +75,18 @@ function tableVis(slice, payload) {
       if (isMetric) {
         html = slice.d3format(c, val);
       }
+      let isDrilldown = false;
+      if(fd.drilldown_field != undefined)
+      fd.drilldown_field.forEach(function(item){
+	if(item == c)
+          isDrilldown = true;
+	});
       return {
         col: c,
         val,
         html,
         isMetric,
+        isDrilldown,
       };
     }))
     .enter()
@@ -104,21 +111,25 @@ function tableVis(slice, payload) {
       return (d.isMetric) ? d.val : null;
     })
     .on('click', function (d) {
-      if (!d.isMetric && fd.table_filter) {
+      if (!d.isMetric && fd.table_filter && d.isDrilldown) {
         const td = d3.select(this);
-        if (td.classed('filtered')) {
-          slice.removeFilter(d.col, [d.val]);
-          d3.select(this).classed('filtered', false);
-        } else {
-          d3.select(this).classed('filtered', true);
-          console.log(d.col)
-          console.log([d.val])
-          slice.addFilter(d.col, [d.val]);
+        //if (td.classed('filtered')) {
+        //  slice.removeFilter(d.col, [d.val]);
+        //  d3.select(this).classed('filtered', false);
+        //} else {
+        //  d3.select(this).classed('filtered', true);
+        //  slice.addFilter(d.col, [d.val]);
+        slice.adddrillDown(d.col, [d.val]);
         }
-      }
     })
     .style('cursor', function (d) {
-      return (!d.isMetric) ? 'pointer' : '';
+      return (d.isDrilldown) ? 'pointer' : '';
+    })
+    .style('color', function(d){
+	return (d.isDrilldown) ? 'blue' : '';
+    })
+    .style('text-align',function(d){
+	return (Number(d.val)) ? 'center' : '';
     })
     .html(d => d.html ? d.html : d.val);
   const height = slice.height();
@@ -134,9 +145,10 @@ function tableVis(slice, payload) {
     aaSorting: [],
     searching: fd.include_search,
     bInfo: false,
-    scrollY: height + 'px',
+    scrollY: 400 + 'px',
     scrollCollapse: true,
     scrollX: true,
+    dom: '<"top"fli>rt<"bottom"p><"clear">'
   });
   fixDataTableBodyHeight(
       container.find('.dataTables_wrapper'), height);

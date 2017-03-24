@@ -26,7 +26,6 @@ export function getInitialState(dashboardData, context) {
   }
   dashboard.curUserId = dashboard.context.user_id;
   dashboard.refreshTimer = null;
-  console.log(dashboardData)
   const state = {
     dashboard,
   };
@@ -97,7 +96,17 @@ function initDashboardView(dashboard) {
   px.initFavStars();
   $('[data-toggle="tooltip"]').tooltip({ container: 'body' });
 }
-
+function rerender(dashboard) {
+  render(
+    <Header dashboard={dashboard} />,
+    document.getElementById('dashboard-header')
+  );
+  // eslint-disable-next-line no-param-reassign
+  dashboard.reactGridLayout = render(
+    <GridLayout dashboard={dashboard} />,
+    document.getElementById('grid-container')
+  );
+}
 export function dashboardContainer(dashboard) {
   return Object.assign({}, dashboard, {
     type: 'dashboard',
@@ -147,7 +156,6 @@ export function dashboardContainer(dashboard) {
         const filters = JSON.parse(px.getParam('preselect_filters') || '{}');
         for (const sliceId in filters) {
           for (const col in filters[sliceId]) {
-            console.log(sliceId,col,filters[sliceId][col]);
             this.setFilter(sliceId, col, filters[sliceId][col], false, false);
           }
         }
@@ -218,17 +226,39 @@ export function dashboardContainer(dashboard) {
       }
       //this.updateFilterParamsInUrl();
     },
-    adddrillDown(sliceId, col, vals, merge = true, refresh = true){
-      console.log(this)
-      if(!(sliceId in this.DrillDowns)){
-	this.DrillDowns[sliceId] = {"currentLevel":0,"drillParams":[{"level":0,"url":12}]};
+    drillDownFilters(sliceId) {
+      var f = this.effectiveExtraFilters(sliceId);
+      for(var i = 0;i <= this.currentLevel(sliceId);i++){
+        let params = this.DrillDowns[sliceId]["drillParams"][i]
+        f.push({
+		col: params.col,
+		op: 'in',
+ 		val: params.vals})
       }
-      var newLevel = this.DrillDowns[sliceId]["currentLevel"] + 1
-      this.DrillDowns[sliceId]["drillParams"].push({"col":col,"vals":vals,"level":newLevel})
+      return f
+    },
+    excludeDrillDownCol(sliceId) {
+	var f = {}
+	for(var i = 0;i <= this.currentLevel(sliceId);i++){
+	  let params = this.DrillDowns[sliceId]["drillParams"][i]
+	  f[params.col] = true;
+	}
+        return f;
+     },
+    adddrillDown(sliceId, col, vals){
+      if(!(sliceId in this.DrillDowns)){
+	this.DrillDowns[sliceId] = {"currentLevel":-1,"drillParams":[]};
+      }
+      const nextLevel = this.currentLevel(sliceId) + 1;
+      if ( this.DrillDowns[sliceId]["drillParams"][nextLevel] === undefined ){
+	this.DrillDowns[sliceId]["drillParams"].length = nextLevel;
+      }
+      this.DrillDowns[sliceId]["drillParams"].push({"col":col,"vals":vals,"level":nextLevel});
+      this.drill(sliceId,nextLevel); 
     },
     drill(sliceId,level){
       if((sliceId in this.DrillDowns)){
-	if (level <= this.DrillDowns[sliceId]["drillParams"].length && level >= 0){
+	if (level < this.DrillDowns[sliceId]["drillParams"].length){
 	    this.DrillDowns[sliceId]["currentLevel"] = level
 	}
       }
@@ -237,6 +267,9 @@ export function dashboardContainer(dashboard) {
       if(sliceId in this.DrillDowns){
         return this.DrillDowns[sliceId]["currentLevel"]
       } else return -1
+     },
+    readDrillDowns(sliceId){
+	return this.DrillDowns[sliceId]["drillParams"]
      },      
     readFilters() {
       // Returns a list of human readable active filters
@@ -378,4 +411,5 @@ $(document).ready(() => {
   const dashboard = dashboardContainer(state.dashboard);
   initDashboardView(dashboard);
   dashboard.init();
+  initDashboardView(dashboard);
 });
