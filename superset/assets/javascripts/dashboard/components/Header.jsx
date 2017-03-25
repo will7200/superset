@@ -15,7 +15,6 @@ class Header extends React.PureComponent {
     render() {
         const dashboard = this.props.dashboard;
         return (
-            <div id="dashboard-header">
                 <div className="title">
                     <div className="pull-left">
                         <h1>
@@ -32,7 +31,6 @@ class Header extends React.PureComponent {
                     </div>
                     <div className="clearfix"/>
                 </div>
-            </div>
         );
     }
 }

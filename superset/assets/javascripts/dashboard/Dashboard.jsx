@@ -96,6 +96,7 @@ export function dashboardContainer(dashboard) {
         type: 'dashboard',
         filters: {},
         DrillDowns: {},
+        store: store,
         init() {
             this.sliceObjects = [];
             dashboard.slices.forEach((data) => {
