@@ -5,7 +5,7 @@ const propTypes = {
   slice: PropTypes.object.isRequired,
   removeSlice: PropTypes.func.isRequired,
   expandedSlices: PropTypes.object,
-  drillLinks: PropTypes.object.isRequired,
+  drillLinks: PropTypes.object,
 };
 
 const mapStateToProps = (state, ownProps) => ({
