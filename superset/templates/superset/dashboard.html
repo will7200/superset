@@ -4,10 +4,5 @@
 <div class="dashboard container-fluid" data-dashboard="{{ dashboard.json_data }}" data-context="{{ context }}">
     {% include 'superset/flash_wrapper.html' %}
     <div id="root"></div>
-    <div id="dashboard-header"></div>
-
-    <!-- gridster class used for backwards compatibility -->
-    <div id="grid-container" class="slice-grid gridster"></div>
-
 </div>
 {% endblock %}
