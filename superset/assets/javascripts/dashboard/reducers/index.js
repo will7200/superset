@@ -1,4 +1,4 @@
-const up =  (state = {},action) => {
+const up =  (state = { drillLinks: []},action) => {
     switch(action.type){
         case 'SERIALIZE_DASHBOARD':
             return {

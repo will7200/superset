@@ -18,7 +18,7 @@ class Dash extends React.PureComponent {
                 <div id="dashboard-header">
                     <Header dashboard={dashboard}/>
                 </div>
-                <div id="grid-container" class="slice-grid gridster">
+                <div id="grid-container" className="slice-grid gridster">
                     <GridLayout dashboard={dashboard} ref="GridLayout"/>
                 </div>
             </div>
