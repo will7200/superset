@@ -12,6 +12,7 @@ import {createStore} from 'redux';
 import { Provider} from 'react-redux';
 import up from './reducers'
 import Dash from './components/main';
+import actions from '../actions'
 
 require('bootstrap');
 require('../../stylesheets/dashboard.css');
@@ -229,6 +230,7 @@ export function dashboardContainer(dashboard) {
             this.DrillDowns[sliceId]["drillParams"].push({"col": col, "vals": vals, "level": nextLevel});
             this.drill(sliceId, nextLevel);
             console.log(this);
+            this.store.dispatch(actions.UPDATE_DRILL(sliceId,['home',vals]))
         },
         drill(sliceId, level) {
             if ((sliceId in this.DrillDowns)) {
