@@ -11,7 +11,7 @@ import {render} from 'react-dom';
 import {createStore} from 'redux';
 import { Provider} from 'react-redux';
 import up from './reducers'
-import main from './components/main';
+import Dash from './components/main';
 
 require('bootstrap');
 require('../../stylesheets/dashboard.css');
@@ -64,7 +64,7 @@ function renderAlert() {
 function initDashboardView(dashboard) {
     render(
       <Provider store ={store}>
-        <main dashboard={dashboard}/>
+        <Dash dashboard={dashboard}/>
        </Provider>, document.getElementById('root'));
 
     // Displaying widget controls on hover

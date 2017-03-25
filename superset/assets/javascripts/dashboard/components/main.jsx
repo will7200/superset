@@ -6,7 +6,7 @@ const propTypes = {
 };
 const defaultProps = {};
 
-class main extends React.PureComponent {
+class Dash extends React.PureComponent {
     constructor(props) {
         super(props);
         this.state = {};
@@ -25,7 +25,7 @@ class main extends React.PureComponent {
         );
     }
 }
-main.propTypes = propTypes;
-main.defaultProps = defaultProps;
+Dash.propTypes = propTypes;
+Dash.defaultProps = defaultProps;
 
-export default main;
+export default Dash;
