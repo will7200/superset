@@ -5,6 +5,11 @@ const up =  (state = { drillLinks: []},action) => {
                 ...state,
                 serialize: true
             }
+        case 'UPDATE_DRILL':
+            drillLinks[action.sliceId] = action.value
+            return {
+              ...state
+            }
         default:
             return state
     }

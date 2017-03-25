@@ -16,6 +16,7 @@ const mapStateToProps = (state, ownProps) => ({
 class sliceCell extends React.Component {
   render (){
   const { expandedSlices, removeSlice, slice, drillLinks, drillLevel} = this.props
+  console.log(this.props)
   return (
     <div className="slice-cell" id={`${slice.slice_id}-cell`}>
       <div className="chart-header">
