@@ -6,6 +6,7 @@ const propTypes = {
   removeSlice: PropTypes.func.isRequired,
   expandedSlices: PropTypes.object,
   drillLinks: PropTypes.object,
+  drillLevel: PropTypes.func.isRequired,
 };
 
 const mapStateToProps = (state, ownProps) => ({
@@ -14,7 +15,7 @@ const mapStateToProps = (state, ownProps) => ({
 
 class sliceCell extends React.Component {
   render (){
-  const { expandedSlices, removeSlice, slice, drillLinks} = this.props
+  const { expandedSlices, removeSlice, slice, drillLinks, drillLevel} = this.props
   return (
     <div className="slice-cell" id={`${slice.slice_id}-cell`}>
       <div className="chart-header">
@@ -23,7 +24,7 @@ class sliceCell extends React.Component {
             <span>{slice.slice_name}</span>
             <span> </span>
             {drillLinks && drillLinks.map((link,index) =>
-		<span onClick={() => {link.drill(slice.slice_id,index-1)}}>{link} </span>)}
+		<span onClick={() => {drillLevel(slice.slice_id,index-1)}}>{link} </span>)}
           </div>
           <div className="col-md-12 chart-controls">
             <div className="pull-right">

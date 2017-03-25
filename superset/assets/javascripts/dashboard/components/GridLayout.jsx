@@ -103,6 +103,7 @@ class GridLayout extends React.Component {
             <SliceCell
               slice={slice}
               removeSlice={this.removeSlice.bind(this, slice.slice_id)}
+              drillLevel={this.props.dashboard.drill}
               expandedSlices={this.props.dashboard.metadata.expanded_slices}
             />
           </div>

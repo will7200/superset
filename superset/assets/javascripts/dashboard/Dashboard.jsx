@@ -227,6 +227,7 @@ export function dashboardContainer(dashboard) {
             }
             this.DrillDowns[sliceId]["drillParams"].push({"col": col, "vals": vals, "level": nextLevel});
             this.drill(sliceId, nextLevel);
+            console.log(this);
         },
         drill(sliceId, level) {
             if ((sliceId in this.DrillDowns)) {
