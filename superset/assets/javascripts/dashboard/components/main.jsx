@@ -13,6 +13,8 @@ class Dash extends React.PureComponent {
     }
     render() {
         const dashboard = this.props.dashboard;
+        console.log(this.props)
+        dashboard.props = this.props
         return (
             <div>
                 <div id="dashboard-header">
