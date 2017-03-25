@@ -80,6 +80,7 @@ class GridLayout extends React.Component {
   }
 
   render() {
+    this.props.dashboard.drill(1,1)
     return (
       <ResponsiveReactGridLayout
         className="layout"
@@ -93,7 +94,7 @@ class GridLayout extends React.Component {
         useCSSTransforms
         draggableHandle=".drag"
       >
-        {this.state.slices.map(slice => (
+        {this.state.slices.map((slice,index) => (
           <div
             id={'slice_' + slice.slice_id}
             key={slice.slice_id}
@@ -103,6 +104,7 @@ class GridLayout extends React.Component {
             <SliceCell
               slice={slice}
               removeSlice={this.removeSlice.bind(this, slice.slice_id)}
+              drillLevel={this.props.dashboard.sliceObjects && this.props.dashboard.sliceObjects[index].drill.bind(this.props.dashboard.sliceObjects[index])}
               expandedSlices={this.props.dashboard.metadata.expanded_slices}
             />
           </div>

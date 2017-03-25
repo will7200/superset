@@ -695,6 +695,16 @@ export const controls = {
     default: '',
     description: 'Custom where clause for DrillDowns' 
   },
+  drilldown_field:{
+    type: 'SelectControl',
+    label: 'Drilldown Field',
+    multi: true,
+    default: [],
+    description: 'Specify which column will drill into the next',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.gb_cols : [],
+    }),
+  },
   having: {
     type: 'TextControl',
     label: 'Custom HAVING clause',
