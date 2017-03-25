@@ -5,12 +5,17 @@ const utils = require('./utils');
 /* eslint camel-case: 0 */
 import vizMap from '../../visualizations/main.js';
 import axios from 'axios';
-import { getExploreUrl } from '../explorev2/exploreUtils';
-import { applyDefaultFormData } from '../explorev2/stores/store';
+import {
+  getExploreUrl
+} from '../explorev2/exploreUtils';
+import {
+  applyDefaultFormData
+} from '../explorev2/stores/store';
 
 /* eslint wrap-iife: 0*/
-const px = function () {
+const px = function() {
   let slice;
+
   function getParam(name) {
     /* eslint no-useless-escape: 0 */
     const formattedName = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
@@ -18,6 +23,7 @@ const px = function () {
     const results = regex.exec(location.search);
     return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
   }
+
   function initFavStars() {
     const baseUrl = '/superset/favstar/';
     // Init star behavihor for favorite
@@ -29,34 +35,34 @@ const px = function () {
       }
     }
     $('.favstar')
-    .attr('title', 'Click to favorite/unfavorite')
-    .css('cursor', 'pointer')
-    .each(show)
-    .each(function () {
-      let url = baseUrl + $(this).attr('class_name');
-      const star = this;
-      url += '/' + $(this).attr('obj_id') + '/';
-      $.getJSON(url + 'count/', function (data) {
-        if (data.count > 0) {
-          $(star).addClass('selected').each(show);
+      .attr('title', 'Click to favorite/unfavorite')
+      .css('cursor', 'pointer')
+      .each(show)
+      .each(function() {
+        let url = baseUrl + $(this).attr('class_name');
+        const star = this;
+        url += '/' + $(this).attr('obj_id') + '/';
+        $.getJSON(url + 'count/', function(data) {
+          if (data.count > 0) {
+            $(star).addClass('selected').each(show);
+          }
+        });
+      })
+      .click(function() {
+        $(this).toggleClass('selected');
+        let url = baseUrl + $(this).attr('class_name');
+        url += '/' + $(this).attr('obj_id') + '/';
+        if ($(this).hasClass('selected')) {
+          url += 'select/';
+        } else {
+          url += 'unselect/';
         }
-      });
-    })
-    .click(function () {
-      $(this).toggleClass('selected');
-      let url = baseUrl + $(this).attr('class_name');
-      url += '/' + $(this).attr('obj_id') + '/';
-      if ($(this).hasClass('selected')) {
-        url += 'select/';
-      } else {
-        url += 'unselect/';
-      }
-      $.get(url);
-      $(this).each(show);
-    })
-    .tooltip();
+        $.get(url);
+        $(this).each(show);
+      })
+      .tooltip();
   }
-  const Slice = function (data, controller) {
+  const Slice = function(data, controller) {
     let timer;
     const token = $('#token_' + data.slice_id);
     const containerId = 'con_' + data.slice_id;
@@ -66,7 +72,7 @@ const px = function () {
     const drilldown = data.drilldown
     const formData = applyDefaultFormData(data.form_data);
     let dttm = 0;
-    const stopwatch = function () {
+    const stopwatch = function() {
       dttm += 10;
       const num = dttm / 1000;
       $('#timer').text(num.toFixed(2) + ' sec');
@@ -79,7 +85,7 @@ const px = function () {
       selector,
       drilldown,
       querystring() {
-        let qrystr='';
+        let qrystr = '';
         const parser = document.createElement('a');
         parser.href = jsonEndpoint;
         if (controller.type === 'dashboard') {
@@ -96,23 +102,23 @@ const px = function () {
       },
       getNextquery() {
         let qrystr = ''
-        if (this.drilldown != null){
-	    var level = this.currentLevel();
-            level += 1;
-            var url = Object.assign({},this.drilldown[level]);
-	    if(this.formData.drillWhere){
-		url.where += this.formData.drillWhere;
-	    }
-            let flts = controller.effectiveExtraFilters(sliceId);
-	    if(flts){
-		url.extra_filters = flts;
-	   }
-	    url = getExploreUrl(url,'json');
-            const parser = document.createElement('a');
-            parser.href = url;
-            qrystr = parser.pathname + parser.search;
+        if (this.drilldown != null) {
+          var level = this.currentLevel();
+          level += 1;
+          var url = Object.assign({}, this.drilldown[level]);
+          if (this.formData.drillWhere) {
+            url.where += this.formData.drillWhere;
+          }
+          let flts = controller.effectiveExtraFilters(sliceId);
+          if (flts) {
+            url.extra_filters = flts;
+          }
+          url = getExploreUrl(url, 'json');
+          const parser = document.createElement('a');
+          parser.href = url;
+          qrystr = parser.pathname + parser.search;
         }
-	return qrystr
+        return qrystr
       },
       getWidgetHeader() {
         return this.container.parents('div.widget').find('.chart-header');
@@ -130,22 +136,24 @@ const px = function () {
       endpoint(endpointType = 'json') {
         let formDataExtra
         let flts
-        if (this.drilldown != null & this.currentLevel() != -1 ){
-	    formDataExtra = Object.assign({},this.drilldown[this.currentLevel()]);
-            flts = controller.drillDownFilters(sliceId);
-            if(this.formData.drillWhere){
-              formDataExtra.where += this.formData.drillWhere;
-	    }
-	    if( formDataExtra.all_columns != undefined & formDataExtra.all_columns.length > 1) {
-               const removeCols = controller.excludeDrillDownCol(sliceId);
-               let newCols  = []
-               formDataExtra.all_columns.map( column => {if(!(column in removeCols))newCols.push(column)});
-	       formDataExtra.all_columns = newCols
-	    }
+        if (this.drilldown != null & this.currentLevel() != -1) {
+          formDataExtra = Object.assign({}, this.drilldown[this.currentLevel()]);
+          flts = controller.drillDownFilters(sliceId);
+          if (this.formData.drillWhere) {
+            formDataExtra.where += this.formData.drillWhere;
+          }
+          if (formDataExtra.all_columns != undefined & formDataExtra.all_columns.length > 1) {
+            const removeCols = controller.excludeDrillDownCol(sliceId);
+            let newCols = []
+            formDataExtra.all_columns.map(column => {
+              if (!(column in removeCols)) newCols.push(column)
+            });
+            formDataExtra.all_columns = newCols
+          }
         } else {
-            formDataExtra = Object.assign({}, formData);
-            flts = controller.effectiveExtraFilters(sliceId);
-	}
+          formDataExtra = Object.assign({}, formData);
+          flts = controller.effectiveExtraFilters(sliceId);
+        }
         if (flts) {
           formDataExtra.extra_filters = flts;
         }
@@ -251,9 +259,9 @@ const px = function () {
       bindResizeToWindowResize() {
         let resizeTimer;
         const slice = this;
-        $(window).on('resize', function () {
+        $(window).on('resize', function() {
           clearTimeout(resizeTimer);
-          resizeTimer = setTimeout(function () {
+          resizeTimer = setTimeout(function() {
             slice.resize();
           }, 500);
         });
@@ -283,36 +291,39 @@ const px = function () {
           this.error(err.responseText, err);
         });
       },
-      renderNext(node){
+      renderNext(node) {
         var that = this
-	if(this.drilldown === undefined | this.drilldown === null){
-		return
-	}
-	if(Object.keys(this.drilldown).length == this.currentLevel()+1){
-		return
-	}
+        if (this.drilldown === undefined | this.drilldown === null) {
+          return
+        }
+        if (Object.keys(this.drilldown).length == this.currentLevel() + 1) {
+          return
+        }
         axios.get(this.getNextquery())
-	     .then(function(response){
-		console.log(response)
-		try {
-		  let newslice = Object.assign({},that);
-                  let formData = that.drilldown[that.currentLevel()+1]
-		  if(node != null){
-			newslice.selector = node;
-                        newslice.container = $(node)
-		        newslice.width = function(){return window.innerWidth -200}
-                        newslice.height = function(){return window.innerHeight -200}
-		  }
-                  newslice.formData = formData;
-		  vizMap[formData.viz_type](newslice,response.data);
-		}catch (e) {
-                  console.log(e)
-            	  that.error('An error occurred while rendering the visualization: ' + e);
-          	}
-	       })
-	     .catch(function(error){
-               console.log(error);
-              });
+          .then(function(response) {
+            try {
+              let newslice = Object.assign({}, that);
+              let formData = that.drilldown[that.currentLevel() + 1]
+              if (node != null) {
+                newslice.selector = node;
+                newslice.container = $(node)
+                newslice.width = function() {
+                  return window.innerWidth - 200
+                }
+                newslice.height = function() {
+                  return window.innerHeight - 200
+                }
+              }
+              newslice.formData = formData;
+              vizMap[formData.viz_type](newslice, response.data);
+            } catch (e) {
+              console.log(e)
+              that.error('An error occurred while rendering the visualization: ' + e);
+            }
+          })
+          .catch(function(error) {
+            console.log(error);
+          });
       },
       resize() {
         this.render();
@@ -324,30 +335,30 @@ const px = function () {
         controller.adddrillDown(sliceId, col, vals, merge);
         this.render();
       },
-      drill(level){
-        controller.drill(sliceId,level);
+      drill(level) {
+        controller.drill(sliceId, level);
       },
-      currentLevel(){
-	return controller.currentLevel(sliceId);
+      currentLevel() {
+        return controller.currentLevel(sliceId);
       },
-      DrillLinks(){
+      DrillLinks() {
         let t = []
-	if (controller.currentLevel(sliceId) != -1){
-	  t = controller.readDrillDowns(sliceId)
+        if (controller.currentLevel(sliceId) != -1) {
+          t = controller.readDrillDowns(sliceId)
           let h = ['home']
           t = h.concat(t);
-         }
+        }
         return t
       },
-      hasNext(){
-	if(this.drilldown === undefined | this.drilldown === null){
-                return false
+      hasNext() {
+        if (this.drilldown === undefined | this.drilldown === null) {
+          return false
         }
-        if(Object.keys(this.drilldown).length == this.currentLevel()+1){
-                return false
+        if (Object.keys(this.drilldown).length == this.currentLevel() + 1) {
+          return false
         }
-	return true;
-      },	
+        return true;
+      },
       setFilter(col, vals, refresh = true) {
         controller.setFilter(sliceId, col, vals, refresh);
       },
