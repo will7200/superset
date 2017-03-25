@@ -8,12 +8,15 @@ const {Alert} = require('react-bootstrap');
 
 import React from 'react';
 import {render} from 'react-dom';
+import {createStore} from 'redux';
+import { Provider} from 'react-redux';
+import up from './reducers'
 import GridLayout from './components/GridLayout';
 import Header from './components/Header';
 
 require('bootstrap');
 require('../../stylesheets/dashboard.css');
-
+const store = createStore(up)
 export function getInitialState(dashboardData, context) {
     const dashboard = Object.assign({
         context
@@ -61,10 +64,10 @@ function renderAlert() {
 
 function initDashboardView(dashboard) {
     render(
-        <Header dashboard={dashboard}/>, document.getElementById('dashboard-header'));
-    // eslint-disable-next-line no-param-reassign
-    dashboard.reactGridLayout = render(
-        <GridLayout dashboard={dashboard}/>, document.getElementById('grid-container'));
+      <Provider store ={store}>
+        <Header dashboard={dashboard}/>
+        <GridLayout dashboard={dashboard} ref="GridLayout"/>
+       </Provider>, document.getElementById('root'));
 
     // Displaying widget controls on hover
     $('.react-grid-item').hover(function() {

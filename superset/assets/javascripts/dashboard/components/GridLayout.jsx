@@ -81,6 +81,7 @@ class GridLayout extends React.Component {
 
   render() {
     return (
+      <div id="grid-container" class="slice-grid gridster">
       <ResponsiveReactGridLayout
         className="layout"
         layouts={{ lg: this.state.layout }}
@@ -102,13 +103,13 @@ class GridLayout extends React.Component {
           >
             <SliceCell
               slice={slice}
-              sliceob={this.props.dashboard.sliceObjects && this.props.dashboard.sliceObjects[index]}
               removeSlice={this.removeSlice.bind(this, slice.slice_id)}
               expandedSlices={this.props.dashboard.metadata.expanded_slices}
             />
           </div>
         ))}
       </ResponsiveReactGridLayout>
+    </div>
     );
   }
 }

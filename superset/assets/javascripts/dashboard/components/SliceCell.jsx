@@ -1,15 +1,20 @@
 import React, { PropTypes } from 'react';
+import { connect } from 'react-redux'
 
 const propTypes = {
   slice: PropTypes.object.isRequired,
   removeSlice: PropTypes.func.isRequired,
   expandedSlices: PropTypes.object,
-  sliceob: PropTypes.object.isRequired,
+  drillLinks: PropTypes.object.isRequired,
 };
 
-class SliceCell extends React.Component {
+const mapStateToProps = (state, ownProps) => ({
+  showId: state.drillLinks[ownProps.slice.slice_id]
+})
+
+class sliceCell extends React.Component {
   render (){
-  const { expandedSlices, removeSlice, slice, sliceob} = this.props
+  const { expandedSlices, removeSlice, slice, drillLinks} = this.props
   return (
     <div className="slice-cell" id={`${slice.slice_id}-cell`}>
       <div className="chart-header">
@@ -17,8 +22,8 @@ class SliceCell extends React.Component {
           <div className="col-md-12 header">
             <span>{slice.slice_name}</span>
             <span> </span>
-            {sliceob && sliceob.DrillLinks && sliceob.DrillLinks().map((link,index) => 
-		<span onClick={() => {slice.drill(slice.slice_id,index-1)}}>{link} </span>)}
+            {drillLinks && drillLinks.map((link,index) =>
+		<span onClick={() => {link.drill(slice.slice_id,index-1)}}>{link} </span>)}
           </div>
           <div className="col-md-12 chart-controls">
             <div className="pull-right">
@@ -91,6 +96,9 @@ class SliceCell extends React.Component {
  }
 }
 
-SliceCell.propTypes = propTypes;
+sliceCell.propTypes = propTypes;
 
+const SliceCell = connect(
+  mapStateToProps,
+)(sliceCell)
 export default SliceCell;
