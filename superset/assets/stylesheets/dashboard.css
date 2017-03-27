@@ -130,3 +130,12 @@ div.widget .chart-controls {
 .slice_container .alert {
     margin: 10px;
 }
+
+.drill-links {
+    color: #3a82c1;
+    cursor: pointer;
+}
+.current-link {
+    text-decoration: underline;
+    cursor: inherit;
+}

@@ -15,6 +15,9 @@ class dash extends React.PureComponent {
         super(props);
         this.state = {};
     }
+    componentDidMount(){
+        this.props.dashboard.reactGridLayout = this.refs.GridLayout
+    }
     render() {
         const dashboard = this.props.dashboard;
         return (

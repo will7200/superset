@@ -116,15 +116,7 @@ export function dashboardContainer(dashboard) {
             this.startPeriodicRender(0);
             this.bindResizeToWindowResize();
         },
-        onChange() {
-            onBeforeUnload(true);
-            renderAlert();
-        },
-        onSave() {
-            onBeforeUnload(false);
-            $('#alert-container').html('');
-        },
-        loadPreSelectFilters() {
+        loadMetadata(){
             var defaultFilters = this.metadata.default_Filters;
             if (defaultFilters != null || defaultFilters != undefined) {
                 var that = this;
@@ -140,6 +132,16 @@ export function dashboardContainer(dashboard) {
                     }
                 });
             }
+        },
+        onChange() {
+            onBeforeUnload(true);
+            renderAlert();
+        },
+        onSave() {
+            onBeforeUnload(false);
+            $('#alert-container').html('');
+        },
+        loadPreSelectFilters() {
             try {
                 const filters = JSON.parse(px.getParam('preselect_filters') || '{}');
                 for (const sliceId in filters) {
@@ -392,6 +394,7 @@ $(document).ready(() => {
     const state = getInitialState(dashboardData, contextData);
     const dashboard = dashboardContainer(state.dashboard);
     initDashboardView(dashboard);
-    dashboard.init()
+    dashboard.init();
     store.dispatch(actions.UPDATE_OBJECT())
+    dashboard.loadMetadata();
 });

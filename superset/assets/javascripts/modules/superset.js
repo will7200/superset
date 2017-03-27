@@ -142,7 +142,7 @@ const px = function() {
           if (this.formData.drillWhere) {
             formDataExtra.where += this.formData.drillWhere;
           }
-          if (formDataExtra.all_columns != undefined & formDataExtra.all_columns.length > 1) {
+          if ("all_columns" in formDataExtra && formDataExtra.all_columns.length > 1) {
             const removeCols = controller.excludeDrillDownCol(sliceId);
             let newCols = []
             formDataExtra.all_columns.map(column => {

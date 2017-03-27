@@ -89,9 +89,9 @@ function bigNumberVis(slice, payload) {
     .style('font-size', d3.min([height, width]) / 8)
     .style('text-anchor', 'middle');
   }
-  var that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name}
-					className="table_drilldown_modal"/>,modal.node());
   if(slice.hasNext()){
+      var that = ReactDOM.render(<ModalDrill modalTitle={json.subheader||slice.data.slice_name}
+                       className="table_drilldown_modal"/>,modal.node());
 	div.on('click',function(){
     	that.open()
     	var node1 = ReactDOM.findDOMNode(that.refs.Body)

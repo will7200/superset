@@ -116,6 +116,14 @@ const visTypes = {
           ['labels_outside'],
         ],
       },
+      {
+        label: 'Drilldown Area',
+        controlSetRows: [
+         ['drillDownEndpoint'],
+         ['drillWhere'],
+         ['drilldown_field'],
+        ],
+       }
     ],
   },
 

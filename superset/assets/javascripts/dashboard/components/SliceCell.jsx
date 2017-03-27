@@ -16,11 +16,27 @@ const mapStateToProps = (state, ownProps) => ({
 class sliceCell extends React.Component {
     constructor(props) {
         super(props);
-        this.state = {};
-        this.getElement = this.getElement.bind(this)
+        this.state = {
+            currentIndex: (this.props.level
+                ? this.props.level() + 1
+                : 0)
+        };
+        this.getElement = this.getElement.bind(this);
     }
-    getElement(element){
-      this.props.drillLevel(element)
+    getElement(element) {
+        if ( element === this.state.currentIndex-1)
+            return
+        this.props.drillLevel(element);
+        this.setState({
+            currentIndex: element+1
+        });
+    }
+    componentWillReceiveProps(nextProps) {
+        this.setState({
+            currentIndex: (this.props.level
+                ? this.props.level() + 1
+                : 0)
+        });
     }
     render() {
         const {expandedSlices, removeSlice, slice, drillLinks, drillLevel} = this.props
@@ -57,10 +73,14 @@ class sliceCell extends React.Component {
                         </div>
                     </div>
                     <div className="row">
-                        {drillLinks && drillLinks.map((link, index) => <span key={index} onClick={() => {
-                            this.getElement(index-1)
-                        }}>/{link}
-                        </span>)}
+                        <div className="col-md-12 header">
+                            {drillLinks && drillLinks.map((link, index) => <span key={index}> <span>/</span> <span className={"drill-links " + (this.state.currentIndex == index
+                                ? 'current-link'
+                                : '')}  onClick={() => {
+                                this.getElement(index - 1)
+                            }}>{link}
+                            </span></span>)}
+                        </div>
                     </div>
                 </div>
                 <div className="slice_description bs-callout bs-callout-default" style={expandedSlices && expandedSlices[String(slice.slice_id)]

@@ -79,7 +79,6 @@ function nvd3Vis(slice, payload) {
 
   slice.container.html('');
   slice.clearError();
-
   // Calculates the longest label size for stretching bottom margin
   function calculateStretchMargins(payloadData) {
     let stretchMargin = 0;
@@ -212,6 +211,9 @@ function nvd3Vis(slice, payload) {
         chart.labelThreshold(0.05)  // Configure the minimum slice size for labels to show up
           .labelType(fd.pie_label_type);
         chart.cornerRadius(true);
+        chart.pie.dispatch.on('elementClick',function(e){
+            slice.adddrillDown(fd.groupby[0],[e.data.x])
+        })
         break;
 
       case 'column':

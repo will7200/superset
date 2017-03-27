@@ -13,7 +13,9 @@ ul.select2-results li.select2-highlighted div.filter_box{
     border-style: solid;
     border-color: #666;
 }
-
+.filter_box {
+    margin: 10px;
+}
 ul.select2-results div.filter_box{
     color: black;
     border-style: solid;

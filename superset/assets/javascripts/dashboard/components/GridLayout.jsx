@@ -80,7 +80,6 @@ class GridLayout extends React.Component {
   }
 
   render() {
-    this.props.dashboard.drill(1,1)
     return (
       <ResponsiveReactGridLayout
         className="layout"
@@ -104,6 +103,7 @@ class GridLayout extends React.Component {
             <SliceCell
               slice={slice}
               removeSlice={this.removeSlice.bind(this, slice.slice_id)}
+              level={this.props.dashboard.sliceObjects && this.props.dashboard.sliceObjects[index].currentLevel.bind(this.props.dashboard.sliceObjects[index])}
               drillLevel={this.props.dashboard.sliceObjects && this.props.dashboard.sliceObjects[index].drill.bind(this.props.dashboard.sliceObjects[index])}
               expandedSlices={this.props.dashboard.metadata.expanded_slices}
             />

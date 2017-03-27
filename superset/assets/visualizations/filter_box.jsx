@@ -100,7 +100,7 @@ class FilterBox extends React.Component {
                 backgroundImage,
                 padding: '2px 5px',
               };
-              return { value: opt.id, label: opt.id, style };
+              return { value: opt.id, label: opt.text , style };
             })}
             onChange={this.changeFilter.bind(this, filter)}
           />
