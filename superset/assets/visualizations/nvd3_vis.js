@@ -211,9 +211,11 @@ function nvd3Vis(slice, payload) {
         chart.labelThreshold(0.05)  // Configure the minimum slice size for labels to show up
           .labelType(fd.pie_label_type);
         chart.cornerRadius(true);
-        chart.pie.dispatch.on('elementClick',function(e){
-            slice.adddrillDown(fd.groupby[0],[e.data.x])
-        })
+        if (slice.hasNext()){
+            chart.pie.dispatch.on('elementClick',function(e){
+                slice.adddrillDown(fd.groupby[0],[e.data.x])
+            })
+        }
         break;
 
       case 'column':

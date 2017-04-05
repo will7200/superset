@@ -71,6 +71,7 @@ const px = function() {
     const sliceId = data.slice_id;
     const drilldown = data.drilldown
     const formData = applyDefaultFormData(data.form_data);
+    formData.extra = data.form_data.Formatextra ? data.form_data.Formatextra : null
     let dttm = 0;
     const stopwatch = function() {
       dttm += 10;
@@ -281,7 +282,10 @@ const px = function() {
         $('#timer').addClass('label-warning');
         $.getJSON(this.jsonEndpoint(), queryResponse => {
           try {
-            vizMap[formData.viz_type](this, queryResponse);
+            let newslice = Object.assign({}, this);
+            let formData = this.currentLevel() == -1 ? this.formData : this.drilldown[this.currentLevel()]
+            newslice.formData = formData;
+            vizMap[formData.viz_type](newslice, queryResponse);
             this.done(queryResponse);
           } catch (e) {
             console.log(e)

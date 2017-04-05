@@ -18,7 +18,7 @@ const defaultProps = {
   beforeOpen: () => {},
   onExit: () => {},
   isButton: false,
-  bsSize: null,
+  bsSize: 'large',
 };
 
 export default class ModalDrill extends React.Component {

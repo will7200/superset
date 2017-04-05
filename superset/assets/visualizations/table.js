@@ -1,6 +1,7 @@
 import d3 from 'd3';
 import {fixDataTableBodyHeight} from '../javascripts/modules/utils';
 import {timeFormatFactory, formatDate} from '../javascripts/modules/dates';
+import moment from 'moment';
 
 require('./table.css');
 const $ = require('jquery');
@@ -50,16 +51,17 @@ function tableVis(slice, payload) {
     });
 
     table.append('tbody').selectAll('tr').data(data.records).enter().append('tr').selectAll('td').data(row => data.columns.map(c => {
-        const val = row[c];
+        let val = row[c];
         let html;
         const isMetric = metrics.indexOf(c) >= 0;
-        if (c === 'timestamp') {
+        if(moment(val,'YYYY-MM-DDTHH:mm:ss.SSSSSS',true).isValid()){
+            val = val.slice(0,val.length-7)
+        }
+        if (c === 'timestamp' || moment(val,'YYYY-MM-DDTHH:mm:ss',true).isValid()) {
             html = timestampFormatter(val);
-        }
-        if (typeof(val) === 'string' && val.length < 17) {
+        } else if (typeof(val) === 'string' && val.length < 17) {
             html = `<span class="like-pre">${val}</span>`;
-        }
-        if (typeof(val) === 'string' && val.length >= 17) {
+        } else if (typeof(val) === 'string' && val.length >= 17) {
             let t = val.substring(0, 17) + '...'
             html = `<span class="like-pre" data-toggle="tooltip" data-container="body" title="${val}">${t}</span>`
         }
