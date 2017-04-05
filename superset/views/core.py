@@ -1034,7 +1034,21 @@ class Superset(BaseSupersetView):
             db.session.commit()
             return redirect('/dashboardmodelview/list/')
         return self.render_template('superset/import_dashboards.html')
-
+    @log_this
+    @has_access
+    @expose("/format/<format_id>",methods=['POST'])
+    def format(self,format_id):
+        session = db.session()
+        data = json.loads(request.data)
+        form = session.query(models.Formats).filter_by(template_name=data[u'template_name']).first()
+        if not form:
+            form = models.Formats(template_name=data[u'template_name'])
+        form.format = data.get('format')
+        form.viz_type = data.get('vizType')
+        form.extra_json = json.dumps(data.get('json'))
+        session.add(form)
+        session.commit()
+        return ('Yes')
     @log_this
     @has_access
     @expose("/explore/<datasource_type>/<datasource_id>/")

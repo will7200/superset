@@ -350,6 +350,58 @@ class TableViz(BaseViz):
     def json_dumps(self, obj):
         return json.dumps(obj, default=utils.json_iso_dttm_ser)
 
+class CarouselViz(BaseViz):
+
+    """A basic html table that is sortable and searchable"""
+
+    viz_type = "carousel"
+    verbose_name = _("Carousel View")
+    credits = 'William Flores'
+    is_timeseries = False
+
+    def should_be_timeseries(self):
+        fd = self.form_data
+        # TODO handle datasource-type-specific code in datasource
+        conditions_met = (
+            (fd.get('granularity') and fd.get('granularity') != 'all') or
+            (fd.get('granularity_sqla') and fd.get('time_grain_sqla'))
+        )
+        if fd.get('include_time') and not conditions_met:
+            raise Exception(
+                "Pick a granularity in the Time section or "
+                "uncheck 'Include Time'")
+        return fd.get('include_time')
+
+    def query_obj(self):
+        d = super(CarouselViz, self).query_obj()
+        fd = self.form_data
+
+        if fd.get('all_columns') and (fd.get('groupby') or fd.get('metrics')):
+            raise Exception(
+                "Choose either fields to [Group By] and [Metrics] or "
+                "[Columns], not both")
+
+        if fd.get('all_columns'):
+            d['columns'] = fd.get('all_columns')
+            d['groupby'] = []
+            order_by_cols = fd.get('order_by_cols') or []
+            d['orderby'] = [json.loads(t) for t in order_by_cols]
+
+        d['is_timeseries'] = self.should_be_timeseries()
+        return d
+
+    def get_data(self, df):
+        if not self.should_be_timeseries() and DTTM_ALIAS in df:
+            del df[DTTM_ALIAS]
+
+        return dict(
+            records=df.to_dict(orient="records"),
+            columns=list(df.columns),
+        )
+
+    def json_dumps(self, obj):
+        return json.dumps(obj, default=utils.json_iso_dttm_ser)
+        
 
 class PivotTableViz(BaseViz):
 
@@ -1604,6 +1656,7 @@ viz_types_list = [
     MapboxViz,
     HistogramViz,
     SeparatorViz,
+    CarouselViz,
 ]
 
 viz_types = OrderedDict([(v.viz_type, v) for v in viz_types_list

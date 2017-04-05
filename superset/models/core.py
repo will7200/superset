@@ -79,6 +79,17 @@ class CssTemplate(Model, AuditMixinNullable):
     template_name = Column(String(250))
     css = Column(Text, default='')
 
+class Formats(Model, AuditMixinNullable):
+
+    """Format templates for dashboards"""
+
+    __tablename__ = 'format_templates'
+    id = Column(Integer, primary_key=True)
+    template_name = Column(String(250))
+    format = Column(Text, default='')
+    viz_type = Column(Text, default='')
+    extra_json = Column(Text, default='')
+
 
 slice_user = Table('slice_user', Model.metadata,
                    Column('id', Integer, primary_key=True),
@@ -172,9 +183,14 @@ class Slice(Model, AuditMixinNullable, ImportMixin):
     @property
     def drilldowns(self):
         d = json.loads(self.params)
-        session = db.session
         data__ = {}
         level = 0
+        self.recursiveDrilldown(d,level,data__)
+        if not data__:
+            return None
+        return data__
+    def recursiveDrilldown(self,d,level,data__):
+        session = db.session
         if 'drillDownEndpoint' in d:
             for drillID in d['drillDownEndpoint']:
                 if not drillID.isdigit():
@@ -182,10 +198,7 @@ class Slice(Model, AuditMixinNullable, ImportMixin):
                 Slice1 = session.query(Slice).filter_by(id=drillID).one()
                 if Slice1:
                     data__[str(level)] = json.loads(Slice1.params)
-                    
-        if not data__:
-            return None
-        return data__
+                    self.recursiveDrilldown(json.loads(Slice1.params),level+1,data__)
     @property
     def json_data(self):
         return json.dumps(self.data)
@@ -197,6 +210,10 @@ class Slice(Model, AuditMixinNullable, ImportMixin):
         form_data['viz_type'] = self.viz_type
         form_data['datasource'] = (
             str(self.datasource_id) + '__' + self.datasource_type)
+        if form_data.get('carouselFormat'):
+            session = db.session()
+            record = session.query(Formats).filter_by(id=form_data.get('carouselFormat')).one()
+            form_data['Formatextra'] = { "format_": record.format, "settings": record.extra_json}
         return form_data
 
     @property
