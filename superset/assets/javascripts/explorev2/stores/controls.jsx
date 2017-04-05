@@ -705,6 +705,13 @@ export const controls = {
       choices: (state.datasource) ? state.datasource.gb_cols : [],
     }),
   },
+  carouselFormat:{
+      type: 'SelectControl',
+      label: 'Format for the Carousel',
+      default: null,
+      freeForm: true,
+      description: 'Id number for the Formatting used'
+  },
   having: {
     type: 'TextControl',
     label: 'Custom HAVING clause',

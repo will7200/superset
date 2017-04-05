@@ -715,6 +715,26 @@ const visTypes = {
       },
     ],
   },
+  
+  carousel: {
+      label: 'Carousel',
+      controlPanelSections: [
+          {
+            label: 'NOT GROUPED BY',
+            description: 'Use this section if you want to query atomic rows',
+            controlSetRows: [
+              ['all_columns', 'order_by_cols'],
+            ],
+        },
+        {
+            label: 'Carousel',
+            description: 'Section for Carousel',
+            controlSetRows: [
+                ['carouselFormat']
+            ]
+        }
+      ]
+  },
 
   mapbox: {
     label: 'Mapbox',
