@@ -115,12 +115,8 @@ function tableVis(slice, payload) {
         if (v.replace) {
             v = v.replace(':', '')
         }
-        return (!isNaN(parseFloat(v)) && isFinite(v))
-            ? 'center'
-            : '';
-    }).html(d => d.html
-        ? d.html
-        : d.val);
+        return (!isNaN(parseFloat(v)) && isFinite(v))? 'center': '';
+    }).html(d => d.html ? d.html : d.val);
     const height = slice.height();
     let paging = false;
     let pageLength;

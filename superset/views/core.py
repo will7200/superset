@@ -9,12 +9,10 @@ import logging
 import pandas as pd
 import pickle
 import re
-import sys
 import time
 import traceback
 import zlib
 
-import functools
 import sqlalchemy as sqla
 
 from flask import (
@@ -39,11 +37,12 @@ from superset.legacy import cast_form_data
 from superset.utils import has_access
 from superset.connectors.connector_registry import ConnectorRegistry
 import superset.models.core as models
+from superset.models.sql_lab import Query
 from superset.sql_parse import SupersetQuery
 
 from .base import (
-    SupersetModelView, BaseSupersetView, DeleteMixin,
-    SupersetFilter, get_user_roles
+    api, SupersetModelView, BaseSupersetView, DeleteMixin,
+    SupersetFilter, get_user_roles, json_error_response, get_error_msg
 )
 
 config = app.config
@@ -72,44 +71,8 @@ def get_datasource_access_error_msg(datasource_name):
               "`all_datasource_access` permission", name=datasource_name)
 
 
-def get_error_msg():
-    if config.get("SHOW_STACKTRACE"):
-        error_msg = traceback.format_exc()
-    else:
-        error_msg = "FATAL ERROR \n"
-        error_msg += (
-            "Stacktrace is hidden. Change the SHOW_STACKTRACE "
-            "configuration setting to enable it")
-    return error_msg
-
-
-def json_error_response(msg, status=None, stacktrace=None):
-    data = {'error': msg}
-    if stacktrace:
-        data['stacktrace'] = stacktrace
-    status = status if status else 500
-    return Response(
-        json.dumps(data),
-        status=status, mimetype="application/json")
-
-
 def json_success(json_msg, status=200):
     return Response(json_msg, status=status, mimetype="application/json")
-
-
-def api(f):
-    """
-    A decorator to label an endpoint as an API. Catches uncaught exceptions and
-    return the response in the JSON format
-    """
-    def wraps(self, *args, **kwargs):
-        try:
-            return f(self, *args, **kwargs)
-        except Exception as e:
-            logging.exception(e)
-            return json_error_response(get_error_msg())
-
-    return functools.update_wrapper(wraps, f)
 
 
 def is_owner(obj, user):
@@ -130,7 +93,7 @@ def check_ownership(obj, raise_if_false=True):
         return False
 
     security_exception = utils.SupersetSecurityException(
-              "You don't have the rights to alter [{}]".format(obj))
+        "You don't have the rights to alter [{}]".format(obj))
 
     if g.user.is_anonymous():
         if raise_if_false:
@@ -567,19 +530,6 @@ appbuilder.add_view(
     icon="fa-list-ol")
 
 
-class QueryView(SupersetModelView):
-    datamodel = SQLAInterface(models.Query)
-    list_columns = ['user', 'database', 'status', 'start_time', 'end_time']
-
-appbuilder.add_view(
-    QueryView,
-    "Queries",
-    label=__("Queries"),
-    category="Manage",
-    category_label=__("Manage"),
-    icon="fa-search")
-
-
 @app.route('/health')
 def health():
     return "OK"
@@ -762,8 +712,8 @@ class Superset(BaseSupersetView):
         granted_perms = []
         for datasource in datasources:
             view_menu_perm = sm.find_permission_view_menu(
-                    view_menu_name=datasource.perm,
-                    permission_name='datasource_access')
+                view_menu_name=datasource.perm,
+                permission_name='datasource_access')
             # prevent creating empty permissions
             if view_menu_perm and view_menu_perm.view_menu:
                 role.permissions.append(view_menu_perm)
@@ -983,14 +933,11 @@ class Superset(BaseSupersetView):
         if request.args.get("query") == "true":
             try:
                 query_obj = viz_obj.query_obj()
-                engine = viz_obj.datasource.database.get_sqla_engine() \
-                    if datasource_type == 'table' \
-                    else viz_obj.datasource.cluster.get_pydruid_client()
                 if datasource_type == 'druid':
                     # only retrive first phase query for druid
                     query_obj['phase'] = 1
                 query = viz_obj.datasource.get_query_str(
-                    engine, datetime.now(), **query_obj)
+                    datetime.now(), **query_obj)
             except Exception as e:
                 return json_error_response(e)
             return Response(
@@ -1143,8 +1090,11 @@ class Superset(BaseSupersetView):
         """
         # TODO: Cache endpoint by user, datasource and column
         datasource_class = ConnectorRegistry.sources[datasource_type]
-        datasource = db.session.query(
-            datasource_class).filter_by(id=datasource_id).first()
+        datasource = (
+            db.session.query(datasource_class)
+            .filter_by(id=datasource_id)
+            .first()
+        )
 
         if not datasource:
             return json_error_response(DATASOURCE_MISSING_ERR)
@@ -1231,10 +1181,11 @@ class Superset(BaseSupersetView):
     @expose("/checkbox/<model_view>/<id_>/<attr>/<value>", methods=['GET'])
     def checkbox(self, model_view, id_, attr, value):
         """endpoint for checking/unchecking any boolean in a sqla model"""
-        views = sys.modules[__name__]
-        model_view_cls = getattr(views, model_view)
-        model = model_view_cls.datamodel.obj
-
+        modelview_to_model = {
+            'TableColumnInlineView':
+                ConnectorRegistry.sources['table'].column_class,
+        }
+        model = modelview_to_model[model_view]
         obj = db.session.query(model).filter_by(id=id_).first()
         if obj:
             setattr(obj, attr, value == 'true')
@@ -1770,6 +1721,7 @@ class Superset(BaseSupersetView):
     @expose("/sqllab_viz/", methods=['POST'])
     @log_this
     def sqllab_viz(self):
+        SqlaTable = ConnectorRegistry.sources['table']
         data = json.loads(request.form.get('data'))
         table_name = data.get('datasourceName')
         viz_type = data.get('chartType')
@@ -1791,13 +1743,14 @@ class Superset(BaseSupersetView):
         for column_name, config in data.get('columns').items():
             is_dim = config.get('is_dim', False)
             SqlaTable = ConnectorRegistry.sources['table']
-            TableColumn = SqlaTable.column_cls
-            SqlMetric = SqlaTable.metric_cls
+            TableColumn = SqlaTable.column_class
+            SqlMetric = SqlaTable.metric_class
             col = TableColumn(
                 column_name=column_name,
                 filterable=is_dim,
                 groupby=is_dim,
                 is_dttm=config.get('is_date', False),
+                type=config.get('type', False),
             )
             cols.append(col)
             if is_dim:
@@ -1940,7 +1893,7 @@ class Superset(BaseSupersetView):
                 status=410
             )
 
-        query = db.session.query(models.Query).filter_by(results_key=key).one()
+        query = db.session.query(Query).filter_by(results_key=key).one()
         rejected_tables = self.rejected_datasources(
             query.sql, query.database, query.schema)
         if rejected_tables:
@@ -1960,14 +1913,16 @@ class Superset(BaseSupersetView):
     @log_this
     def stop_query(self):
         client_id = request.form.get('client_id')
-        query = db.session.query(models.Query).filter_by(
-            client_id=client_id).one()
-        if query.user_id != g.user.id:
-            return json_error_response(
-                "Only original author can stop the query.")
-        query.status = utils.QueryStatus.STOPPED
-        db.session.commit()
-        return Response(201)
+        try:
+            query = (
+                db.session.query(Query)
+                .filter_by(client_id=client_id).one()
+            )
+            query.status = utils.QueryStatus.STOPPED
+            db.session.commit()
+        except Exception as e:
+            pass
+        return self.json_response('OK')
 
     @has_access_api
     @expose("/sql_json/", methods=['POST', 'GET'])
@@ -2000,7 +1955,7 @@ class Superset(BaseSupersetView):
                 tmp_table_name
             )
 
-        query = models.Query(
+        query = Query(
             database_id=int(database_id),
             limit=int(app.config.get('SQL_MAX_ROW', None)),
             sql=sql,
@@ -2015,18 +1970,37 @@ class Superset(BaseSupersetView):
             client_id=request.form.get('client_id'),
         )
         session.add(query)
-        session.commit()
+        session.flush()
         query_id = query.id
+        session.commit()  # shouldn't be necessary
+        if not query_id:
+            raise Exception("Query record was not created as expected.")
+        logging.info("Triggering query_id: {}".format(query_id))
 
         # Async request.
         if async:
             # Ignore the celery future object and the request may time out.
-            sql_lab.get_sql_results.delay(
-                query_id, return_results=False,
-                store_results=not query.select_as_cta)
-            return json_success(json.dumps(
+            try:
+                sql_lab.get_sql_results.delay(
+                    query_id=query_id, return_results=False,
+                    store_results=not query.select_as_cta)
+            except Exception as e:
+                logging.exception(e)
+                msg = (
+                    "Failed to start remote query on worker. "
+                    "Tell your administrator to verify the availability of "
+                    "the message queue."
+                )
+                query.status = QueryStatus.FAILED
+                query.error_message = msg
+                session.commit()
+                return json_error_response("{}".format(msg))
+
+            resp = json_success(json.dumps(
                 {'query': query.to_dict()}, default=utils.json_int_dttm_ser,
                 allow_nan=False), status=202)
+            session.commit()
+            return resp
 
         # Sync request.
         try:
@@ -2038,7 +2012,9 @@ class Superset(BaseSupersetView):
                         "timeout. You may want to run your query as a "
                         "`CREATE TABLE AS` to prevent timeouts."
                     ).format(**locals())):
-                data = sql_lab.get_sql_results(query_id, return_results=True)
+                # pylint: disable=no-value-for-parameter
+                data = sql_lab.get_sql_results(
+                    query_id=query_id, return_results=True)
         except Exception as e:
             logging.exception(e)
             return json_error_response("{}".format(e))
@@ -2050,7 +2026,7 @@ class Superset(BaseSupersetView):
     def csv(self, client_id):
         """Download the query results as csv."""
         query = (
-            db.session.query(models.Query)
+            db.session.query(Query)
             .filter_by(client_id=client_id)
             .one()
         )
@@ -2101,7 +2077,6 @@ class Superset(BaseSupersetView):
             return json_error_response(DATASOURCE_ACCESS_ERR)
         return json_success(json.dumps(datasource.data))
 
-    @has_access
     @expose("/queries/<last_updated_ms>")
     def queries(self, last_updated_ms):
         """Get the updated queries."""
@@ -2116,10 +2091,10 @@ class Superset(BaseSupersetView):
         last_updated_dt = utils.EPOCH + timedelta(seconds=last_updated_ms_int / 1000)
 
         sql_queries = (
-            db.session.query(models.Query)
+            db.session.query(Query)
             .filter(
-                models.Query.user_id == g.user.get_id(),
-                models.Query.changed_on >= last_updated_dt,
+                Query.user_id == g.user.get_id(),
+                Query.changed_on >= last_updated_dt,
             )
             .all()
         )
@@ -2132,7 +2107,7 @@ class Superset(BaseSupersetView):
     @log_this
     def search_queries(self):
         """Search for queries."""
-        query = db.session.query(models.Query)
+        query = db.session.query(Query)
         search_user_id = request.args.get('user_id')
         database_id = request.args.get('database_id')
         search_text = request.args.get('search_text')
@@ -2143,30 +2118,30 @@ class Superset(BaseSupersetView):
 
         if search_user_id:
             # Filter on db Id
-            query = query.filter(models.Query.user_id == search_user_id)
+            query = query.filter(Query.user_id == search_user_id)
 
         if database_id:
             # Filter on db Id
-            query = query.filter(models.Query.database_id == database_id)
+            query = query.filter(Query.database_id == database_id)
 
         if status:
             # Filter on status
-            query = query.filter(models.Query.status == status)
+            query = query.filter(Query.status == status)
 
         if search_text:
             # Filter on search text
             query = query \
-                .filter(models.Query.sql.like('%{}%'.format(search_text)))
+                .filter(Query.sql.like('%{}%'.format(search_text)))
 
         if from_time:
-            query = query.filter(models.Query.start_time > int(from_time))
+            query = query.filter(Query.start_time > int(from_time))
 
         if to_time:
-            query = query.filter(models.Query.start_time < int(to_time))
+            query = query.filter(Query.start_time < int(to_time))
 
         query_limit = config.get('QUERY_SEARCH_LIMIT', 1000)
         sql_queries = (
-            query.order_by(models.Query.start_time.asc())
+            query.order_by(Query.start_time.asc())
             .limit(query_limit)
             .all()
         )
@@ -2177,32 +2152,6 @@ class Superset(BaseSupersetView):
             json.dumps(dict_queries, default=utils.json_int_dttm_ser),
             status=200,
             mimetype="application/json")
-
-    @has_access
-    @expose("/refresh_datasources/")
-    def refresh_datasources(self):
-        """endpoint that refreshes druid datasources metadata"""
-        session = db.session()
-        DruidDatasource = ConnectorRegistry.sources['druid']
-        DruidCluster = DruidDatasource.cluster_class
-        for cluster in session.query(DruidCluster).all():
-            cluster_name = cluster.cluster_name
-            try:
-                cluster.refresh_datasources()
-            except Exception as e:
-                flash(
-                    "Error while processing cluster '{}'\n{}".format(
-                        cluster_name, utils.error_msg_from_exception(e)),
-                    "danger")
-                logging.exception(e)
-                return redirect('/druidclustermodelview/list/')
-            cluster.metadata_last_refreshed = datetime.now()
-            flash(
-                "Refreshed metadata from cluster "
-                "[" + cluster.cluster_name + "]",
-                'info')
-        session.commit()
-        return redirect("/druiddatasourcemodelview/list/")
 
     @app.errorhandler(500)
     def show_traceback(self):
@@ -2271,21 +2220,14 @@ class Superset(BaseSupersetView):
         d = {
             'defaultDbId': config.get('SQLLAB_DEFAULT_DBID'),
         }
+        from flask_wtf import FlaskForm
+        ff = FlaskForm()
         return self.render_template(
             'superset/sqllab.html',
+            csrf_token=ff.csrf_token,
             bootstrap_data=json.dumps(d, default=utils.json_iso_dttm_ser)
         )
 appbuilder.add_view_no_menu(Superset)
-
-if config['DRUID_IS_ACTIVE']:
-    appbuilder.add_link(
-        "Refresh Druid Metadata",
-        label=__("Refresh Druid Metadata"),
-        href='/superset/refresh_datasources/',
-        category='Sources',
-        category_label=__("Sources"),
-        category_icon='fa-database',
-        icon="fa-cog")
 
 
 class CssTemplateModelView(SupersetModelView, DeleteMixin):

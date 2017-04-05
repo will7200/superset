@@ -9,7 +9,6 @@ import json
 import logging
 import numpy
 import pickle
-import re
 import textwrap
 from future.standard_library import install_aliases
 from copy import copy
@@ -26,10 +25,10 @@ from flask_appbuilder.models.decorators import renders
 
 from sqlalchemy import (
     Column, Integer, String, ForeignKey, Text, Boolean,
-    DateTime, Date, Table, Numeric,
+    DateTime, Date, Table,
     create_engine, MetaData, select
 )
-from sqlalchemy.orm import backref, relationship
+from sqlalchemy.orm import relationship
 from sqlalchemy.orm.session import make_transient
 from sqlalchemy.sql import text
 from sqlalchemy.sql.expression import TextAsFrom
@@ -44,6 +43,7 @@ install_aliases()
 from urllib import parse  # noqa
 
 config = app.config
+metadata = Model.metadata  # pylint: disable=no-member
 
 
 def set_related_perm(mapper, connection, target):  # noqa
@@ -91,7 +91,7 @@ class Formats(Model, AuditMixinNullable):
     extra_json = Column(Text, default='')
 
 
-slice_user = Table('slice_user', Model.metadata,
+slice_user = Table('slice_user', metadata,
                    Column('id', Integer, primary_key=True),
                    Column('user_id', Integer, ForeignKey('ab_user.id')),
                    Column('slice_id', Integer, ForeignKey('slices.id'))
@@ -132,26 +132,30 @@ class Slice(Model, AuditMixinNullable, ImportMixin):
     @datasource.getter
     @utils.memoized
     def get_datasource(self):
-        ds = db.session.query(
-            self.cls_model).filter_by(
-            id=self.datasource_id).first()
-        return ds
+        return (
+            db.session.query(self.cls_model)
+            .filter_by(id=self.datasource_id)
+            .first()
+        )
 
     @renders('datasource_name')
     def datasource_link(self):
+        # pylint: disable=no-member
         datasource = self.datasource
-        if datasource:
-            return self.datasource.link
+        return datasource.link if datasource else None
 
     @property
     def datasource_edit_url(self):
-        self.datasource.url
+        # pylint: disable=no-member
+        datasource = self.datasource
+        return datasource.url if datasource else None
 
     @property
     @utils.memoized
     def viz(self):
         d = json.loads(self.params)
         viz_class = viz_types[self.viz_type]
+        # pylint: disable=no-member
         return viz_class(self.datasource, form_data=d)
 
     @property
@@ -303,14 +307,14 @@ sqla.event.listen(Slice, 'before_update', set_related_perm)
 
 
 dashboard_slices = Table(
-    'dashboard_slices', Model.metadata,
+    'dashboard_slices', metadata,
     Column('id', Integer, primary_key=True),
     Column('dashboard_id', Integer, ForeignKey('dashboards.id')),
     Column('slice_id', Integer, ForeignKey('slices.id')),
 )
 
 dashboard_user = Table(
-    'dashboard_user', Model.metadata,
+    'dashboard_user', metadata,
     Column('id', Integer, primary_key=True),
     Column('user_id', Integer, ForeignKey('ab_user.id')),
     Column('dashboard_id', Integer, ForeignKey('dashboards.id'))
@@ -341,6 +345,7 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
 
     @property
     def table_names(self):
+        # pylint: disable=no-member
         return ", ".join(
             {"{}".format(s.datasource.full_name) for s in self.slices})
 
@@ -354,6 +359,7 @@ class Dashboard(Model, AuditMixinNullable, ImportMixin):
 
     @property
     def sqla_metadata(self):
+        # pylint: disable=no-member
         metadata = MetaData(bind=self.get_sqla_engine())
         return metadata.reflect()
 
@@ -602,7 +608,7 @@ class Database(Model, AuditMixinNullable):
         # Postgres and Redshift use the concept of schema as a logical entity
         # on top of the database, so the database should not be changed
         # even if passed default_database
-        elif self.backend == 'redshift' or self.backend == 'postgresql':
+        elif self.backend in ('redshift', 'postgresql', 'sqlite'):
             pass
         elif default_database:
             database = default_database
@@ -824,105 +830,6 @@ class FavStar(Model):
     dttm = Column(DateTime, default=datetime.utcnow)
 
 
-class Query(Model):
-
-    """ORM model for SQL query"""
-
-    __tablename__ = 'query'
-    id = Column(Integer, primary_key=True)
-    client_id = Column(String(11), unique=True, nullable=False)
-
-    database_id = Column(Integer, ForeignKey('dbs.id'), nullable=False)
-
-    # Store the tmp table into the DB only if the user asks for it.
-    tmp_table_name = Column(String(256))
-    user_id = Column(
-        Integer, ForeignKey('ab_user.id'), nullable=True)
-    status = Column(String(16), default=QueryStatus.PENDING)
-    tab_name = Column(String(256))
-    sql_editor_id = Column(String(256))
-    schema = Column(String(256))
-    sql = Column(Text)
-    # Query to retrieve the results,
-    # used only in case of select_as_cta_used is true.
-    select_sql = Column(Text)
-    executed_sql = Column(Text)
-    # Could be configured in the superset config.
-    limit = Column(Integer)
-    limit_used = Column(Boolean, default=False)
-    limit_reached = Column(Boolean, default=False)
-    select_as_cta = Column(Boolean)
-    select_as_cta_used = Column(Boolean, default=False)
-
-    progress = Column(Integer, default=0)  # 1..100
-    # # of rows in the result set or rows modified.
-    rows = Column(Integer)
-    error_message = Column(Text)
-    # key used to store the results in the results backend
-    results_key = Column(String(64), index=True)
-
-    # Using Numeric in place of DateTime for sub-second precision
-    # stored as seconds since epoch, allowing for milliseconds
-    start_time = Column(Numeric(precision=3))
-    end_time = Column(Numeric(precision=3))
-    changed_on = Column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)
-
-    database = relationship(
-        'Database',
-        foreign_keys=[database_id],
-        backref=backref('queries', cascade='all, delete-orphan')
-    )
-    user = relationship(
-        'User',
-        backref=backref('queries', cascade='all, delete-orphan'),
-        foreign_keys=[user_id])
-
-    __table_args__ = (
-        sqla.Index('ti_user_id_changed_on', user_id, changed_on),
-    )
-
-    @property
-    def limit_reached(self):
-        return self.rows == self.limit if self.limit_used else False
-
-    def to_dict(self):
-        return {
-            'changedOn': self.changed_on,
-            'changed_on': self.changed_on.isoformat(),
-            'dbId': self.database_id,
-            'db': self.database.database_name,
-            'endDttm': self.end_time,
-            'errorMessage': self.error_message,
-            'executedSql': self.executed_sql,
-            'id': self.client_id,
-            'limit': self.limit,
-            'progress': self.progress,
-            'rows': self.rows,
-            'schema': self.schema,
-            'ctas': self.select_as_cta,
-            'serverId': self.id,
-            'sql': self.sql,
-            'sqlEditorId': self.sql_editor_id,
-            'startDttm': self.start_time,
-            'state': self.status.lower(),
-            'tab': self.tab_name,
-            'tempTable': self.tmp_table_name,
-            'userId': self.user_id,
-            'user': self.user.username,
-            'limit_reached': self.limit_reached,
-            'resultsKey': self.results_key,
-        }
-
-    @property
-    def name(self):
-        ts = datetime.now().isoformat()
-        ts = ts.replace('-', '').replace(':', '').split('.')[0]
-        tab = self.tab_name.replace(' ', '_').lower() if self.tab_name else 'notab'
-        tab = re.sub(r'\W+', '', tab)
-        return "sqllab_{tab}_{ts}".format(**locals())
-
-
 class DatasourceAccessRequest(Model, AuditMixinNullable):
     """ORM model for the access requests for datasources and dbs."""
     __tablename__ = 'access_request'
@@ -948,19 +855,20 @@ class DatasourceAccessRequest(Model, AuditMixinNullable):
     @datasource.getter
     @utils.memoized
     def get_datasource(self):
+        # pylint: disable=no-member
         ds = db.session.query(self.cls_model).filter_by(
             id=self.datasource_id).first()
         return ds
 
     @property
     def datasource_link(self):
-        return self.datasource.link
+        return self.datasource.link  # pylint: disable=no-member
 
     @property
     def roles_with_datasource(self):
         action_list = ''
-        pv = sm.find_permission_view_menu(
-            'datasource_access', self.datasource.perm)
+        perm = self.datasource.perm  # pylint: disable=no-member
+        pv = sm.find_permission_view_menu('datasource_access', perm)
         for r in pv.role:
             if r.name in self.ROLES_BLACKLIST:
                 continue
@@ -977,7 +885,7 @@ class DatasourceAccessRequest(Model, AuditMixinNullable):
     @property
     def user_roles(self):
         action_list = ''
-        for r in self.created_by.roles:
+        for r in self.created_by.roles:  # pylint: disable=no-member
             url = (
                 '/superset/approve?datasource_type={self.datasource_type}&'
                 'datasource_id={self.datasource_id}&'

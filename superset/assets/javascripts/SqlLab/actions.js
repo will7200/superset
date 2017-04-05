@@ -1,3 +1,4 @@
+/* global notify */
 import shortid from 'shortid';
 import { now } from '../modules/dates';
 const $ = require('jquery');
@@ -24,7 +25,6 @@ export const SET_ACTIVE_SOUTHPANE_TAB = 'SET_ACTIVE_SOUTHPANE_TAB';
 export const ADD_ALERT = 'ADD_ALERT';
 export const REMOVE_ALERT = 'REMOVE_ALERT';
 export const REFRESH_QUERIES = 'REFRESH_QUERIES';
-export const SET_NETWORK_STATUS = 'SET_NETWORK_STATUS';
 export const RUN_QUERY = 'RUN_QUERY';
 export const START_QUERY = 'START_QUERY';
 export const STOP_QUERY = 'STOP_QUERY';
@@ -34,9 +34,23 @@ export const QUERY_FAILED = 'QUERY_FAILED';
 export const CLEAR_QUERY_RESULTS = 'CLEAR_QUERY_RESULTS';
 export const REMOVE_DATA_PREVIEW = 'REMOVE_DATA_PREVIEW';
 export const CHANGE_DATA_PREVIEW_ID = 'CHANGE_DATA_PREVIEW_ID';
+export const SAVE_QUERY = 'SAVE_QUERY';
 
 export function resetState() {
   return { type: RESET_STATE };
+}
+
+export function saveQuery(query) {
+  const url = '/savedqueryviewapi/api/create';
+  $.ajax({
+    type: 'POST',
+    url,
+    data: query,
+    success: () => notify.success('Your query was saved'),
+    error: () => notify.error('Your query could not be saved'),
+    dataType: 'json',
+  });
+  return { type: SAVE_QUERY };
 }
 
 export function startQuery(query) {
@@ -171,10 +185,6 @@ export function addQueryEditor(queryEditor) {
 
 export function cloneQueryToNewTab(query) {
   return { type: CLONE_QUERY_TO_NEW_TAB, query };
-}
-
-export function setNetworkStatus(networkOn) {
-  return { type: SET_NETWORK_STATUS, networkOn };
 }
 
 export function addAlert(alert) {
@@ -333,6 +343,27 @@ export function popStoredQuery(urlId) {
         };
         dispatch(addQueryEditor(queryEditorProps));
       },
+      error: () => notify.error("The query couldn't be loaded"),
+    });
+  };
+}
+export function popSavedQuery(saveQueryId) {
+  return function (dispatch) {
+    $.ajax({
+      type: 'GET',
+      url: `/savedqueryviewapi/api/get/${saveQueryId}`,
+      success: (data) => {
+        const sq = data.result;
+        const queryEditorProps = {
+          title: sq.label,
+          dbId: sq.db_id,
+          schema: sq.schema,
+          autorun: false,
+          sql: sq.sql,
+        };
+        dispatch(addQueryEditor(queryEditorProps));
+      },
+      error: () => notify.error("The query couldn't be loaded"),
     });
   };
 }

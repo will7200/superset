@@ -56,17 +56,20 @@ class ChartContainer extends React.PureComponent {
   }
 
   componentDidUpdate(prevProps) {
-    if (
-        (
-          prevProps.queryResponse !== this.props.queryResponse ||
-          prevProps.height !== this.props.height ||
-          this.props.triggerRender
-        ) && !this.props.queryResponse.error
-        && this.props.chartStatus !== 'failed'
-        && this.props.chartStatus !== 'stopped'
-      ) {
+    if (this.shouldRenderViz(prevProps)) {
       this.renderViz();
     }
+  }
+
+  shouldRenderViz(prevProps) {
+    const hasHeightChanged = prevProps.height !== this.props.height;
+    const hasQueryChanged = prevProps.queryResponse !== this.props.queryResponse;
+    const hasErrors = this.props.queryResponse && this.props.queryResponse.error;
+
+    return (hasQueryChanged || hasHeightChanged || this.props.triggerRender)
+            && !hasErrors
+            && this.props.chartStatus !== 'failed'
+            && this.props.chartStatus !== 'stopped';
   }
 
   getMockedSliceObject() {
@@ -213,6 +216,8 @@ class ChartContainer extends React.PureComponent {
 
   render() {
     if (this.props.standalone) {
+      // dom manipulation hack to get rid of the boostrap theme's body background
+      $('body').addClass('background-transparent');
       return this.renderChart();
     }
     const queryResponse = this.props.queryResponse;

@@ -17,20 +17,22 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 from collections import namedtuple, defaultdict
-from superset import utils
 
 import inspect
+import logging
 import re
-import sqlparse
 import textwrap
 import time
 
-from superset import cache_util
+import sqlparse
 from sqlalchemy import select
 from sqlalchemy.sql import text
+from flask_babel import lazy_gettext as _
+
 from superset.utils import SupersetTemplateException
 from superset.utils import QueryStatus
-from flask_babel import lazy_gettext as _
+from superset import utils
+from superset import cache_util
 
 Grain = namedtuple('Grain', 'name label function')
 
@@ -42,6 +44,9 @@ class LimitMethod(object):
 
 
 class BaseEngineSpec(object):
+
+    """Abstract class for database engine specific configurations"""
+
     engine = 'base'  # str as defined in sqlalchemy.engine.engine
     cursor_execute_kwargs = {}
     time_grains = tuple()
@@ -186,6 +191,50 @@ class PostgresEngineSpec(BaseEngineSpec):
         return "'{}'".format(dttm.strftime('%Y-%m-%d %H:%M:%S'))
 
 
+class Db2EngineSpec(BaseEngineSpec):
+    engine = 'ibm_db_sa'
+    time_grains = (
+        Grain('Time Column', _('Time Column'), '{col}'),
+        Grain('second', _('second'),
+              'CAST({col} as TIMESTAMP)'
+              ' - MICROSECOND({col}) MICROSECONDS'),
+        Grain('minute', _('minute'),
+              'CAST({col} as TIMESTAMP)'
+              ' - SECOND({col}) SECONDS'
+              ' - MICROSECOND({col}) MICROSECONDS'),
+        Grain('hour', _('hour'),
+              'CAST({col} as TIMESTAMP)'
+              ' - MINUTE({col}) MINUTES'
+              ' - SECOND({col}) SECONDS'
+              ' - MICROSECOND({col}) MICROSECONDS '),
+        Grain('day', _('day'),
+              'CAST({col} as TIMESTAMP)'
+              ' - HOUR({col}) HOURS'
+              ' - MINUTE({col}) MINUTES'
+              ' - SECOND({col}) SECONDS'
+              ' - MICROSECOND({col}) MICROSECONDS '),
+        Grain('week', _('week'),
+              '{col} - (DAYOFWEEK({col})) DAYS'),
+        Grain('month', _('month'),
+              '{col} - (DAY({col})-1) DAYS'),
+        Grain('quarter', _('quarter'),
+              '{col} - (DAY({col})-1) DAYS'
+              ' - (MONTH({col})-1) MONTHS'
+              ' + ((QUARTER({col})-1) * 3) MONTHS'),
+        Grain('year', _('year'),
+              '{col} - (DAY({col})-1) DAYS'
+              ' - (MONTH({col})-1) MONTHS'),
+    )
+
+    @classmethod
+    def epoch_to_dttm(cls):
+        return "(TIMESTAMP('1970-01-01', '00:00:00') + {col} SECONDS)"
+
+    @classmethod
+    def convert_dttm(cls, target_type, dttm):
+        return "'{}'".format(dttm.strftime('%Y-%m-%d-%H.%M.%S'))
+
+
 class SqliteEngineSpec(BaseEngineSpec):
     engine = 'sqlite'
     time_grains = (
@@ -280,10 +329,6 @@ class PrestoEngineSpec(BaseEngineSpec):
         presto.Cursor.cancel = patched_presto.cancel
 
     @classmethod
-    def sql_preprocessor(cls, sql):
-        return sql.replace('%', '%%')
-
-    @classmethod
     def convert_dttm(cls, target_type, dttm):
         tt = target_type.upper()
         if tt == 'DATE':
@@ -341,6 +386,7 @@ class PrestoEngineSpec(BaseEngineSpec):
     @classmethod
     def handle_cursor(cls, cursor, query, session):
         """Updates progress information"""
+        logging.info('Polling the cursor for progress')
         polled = cursor.poll()
         # poll returns dict -- JSON status information or ``None``
         # if the query is done
@@ -360,10 +406,14 @@ class PrestoEngineSpec(BaseEngineSpec):
                 total_splits = float(stats.get('totalSplits'))
                 if total_splits and completed_splits:
                     progress = 100 * (completed_splits / total_splits)
+                    logging.info(
+                        'Query progress: {} / {} '
+                        'splits'.format(completed_splits, total_splits))
                     if progress > query.progress:
                         query.progress = progress
                     session.commit()
             time.sleep(1)
+            logging.info('Polling the cursor for progress')
             polled = cursor.poll()
 
     @classmethod
@@ -699,6 +749,48 @@ class OracleEngineSpec(PostgresEngineSpec):
 
 class VerticaEngineSpec(PostgresEngineSpec):
     engine = 'vertica'
+
+
+class AthenaEngineSpec(BaseEngineSpec):
+    engine = 'awsathena'
+
+    time_grains = (
+        Grain('Time Column', _('Time Column'), '{col}'),
+        Grain('second', _('second'),
+              "date_trunc('second', CAST({col} AS TIMESTAMP))"),
+        Grain('minute', _('minute'),
+              "date_trunc('minute', CAST({col} AS TIMESTAMP))"),
+        Grain('hour', _('hour'),
+              "date_trunc('hour', CAST({col} AS TIMESTAMP))"),
+        Grain('day', _('day'),
+              "date_trunc('day', CAST({col} AS TIMESTAMP))"),
+        Grain('week', _('week'),
+              "date_trunc('week', CAST({col} AS TIMESTAMP))"),
+        Grain('month', _('month'),
+              "date_trunc('month', CAST({col} AS TIMESTAMP))"),
+        Grain('quarter', _('quarter'),
+              "date_trunc('quarter', CAST({col} AS TIMESTAMP))"),
+        Grain("week_ending_saturday", _('week_ending_saturday'),
+              "date_add('day', 5, date_trunc('week', date_add('day', 1, "
+              "CAST({col} AS TIMESTAMP))))"),
+        Grain("week_start_sunday", _('week_start_sunday'),
+              "date_add('day', -1, date_trunc('week', "
+              "date_add('day', 1, CAST({col} AS TIMESTAMP))))"),
+    )
+
+    @classmethod
+    def convert_dttm(cls, target_type, dttm):
+        tt = target_type.upper()
+        if tt == 'DATE':
+            return "from_iso8601_date('{}')".format(dttm.isoformat()[:10])
+        if tt == 'TIMESTAMP':
+            return "from_iso8601_timestamp('{}')".format(dttm.isoformat())
+        return ("CAST ('{}' AS TIMESTAMP)"
+                .format(dttm.strftime('%Y-%m-%d %H:%M:%S')))
+
+    @classmethod
+    def epoch_to_dttm(cls):
+        return "from_unixtime({col})"
 
 engines = {
     o.engine: o for o in globals().values()

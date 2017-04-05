@@ -268,16 +268,6 @@ class DruidMetric(Model, BaseMetric):
         enable_typechecks=False)
     json = Column(Text)
 
-    def refresh_datasources(self, datasource_name=None, merge_flag=False):
-        """Refresh metadata of all datasources in the cluster
-
-        If ``datasource_name`` is specified, only that datasource is updated
-        """
-        self.druid_version = self.get_druid_version()
-        for datasource in self.get_datasources():
-            if datasource not in conf.get('DRUID_DATA_SOURCE_BLACKLIST'):
-                if not datasource_name or datasource_name == datasource:
-                    DruidDatasource.sync_to_db(datasource, self, merge_flag)
     export_fields = (
         'metric_name', 'verbose_name', 'metric_type', 'datasource_name',
         'json', 'description', 'is_restricted', 'd3format'
@@ -312,49 +302,34 @@ class DruidDatasource(Model, BaseDatasource):
 
     """ORM object referencing Druid datasources (tables)"""
 
+    __tablename__ = 'datasources'
+
     type = "druid"
     query_langtage = "json"
-    metric_class = DruidMetric
     cluster_class = DruidCluster
+    metric_class = DruidMetric
+    column_class = DruidColumn
 
     baselink = "druiddatasourcemodelview"
 
-    __tablename__ = 'datasources'
-    id = Column(Integer, primary_key=True)
+    # Columns
     datasource_name = Column(String(255), unique=True)
-    is_featured = Column(Boolean, default=False)
     is_hidden = Column(Boolean, default=False)
-    filter_select_enabled = Column(Boolean, default=False)
-    description = Column(Text)
     fetch_values_from = Column(String(100))
-    default_endpoint = Column(Text)
+    cluster_name = Column(
+        String(250), ForeignKey('clusters.cluster_name'))
+    cluster = relationship(
+        'DruidCluster', backref='datasources', foreign_keys=[cluster_name])
     user_id = Column(Integer, ForeignKey('ab_user.id'))
     owner = relationship(
         'User',
         backref=backref('datasources', cascade='all, delete-orphan'),
         foreign_keys=[user_id])
-    cluster_name = Column(
-        String(250), ForeignKey('clusters.cluster_name'))
-    cluster = relationship(
-        'DruidCluster', backref='datasources', foreign_keys=[cluster_name])
-    offset = Column(Integer, default=0)
-    cache_timeout = Column(Integer)
-    params = Column(String(1000))
-    perm = Column(String(1000))
-
-    metric_cls = DruidMetric
-    column_cls = DruidColumn
 
     export_fields = (
         'datasource_name', 'is_hidden', 'description', 'default_endpoint',
-        'cluster_name', 'is_featured', 'offset', 'cache_timeout', 'params'
+        'cluster_name', 'offset', 'cache_timeout', 'params'
     )
-
-    @property
-    def metrics_combo(self):
-        return sorted(
-            [(m.metric_name, m.verbose_name) for m in self.metrics],
-            key=lambda x: x[1])
 
     @property
     def database(self):
@@ -718,11 +693,10 @@ class DruidDatasource(Model, BaseDatasource):
         client = self.cluster.get_pydruid_client()
         client.topn(**qry)
         df = client.export_pandas()
-
-        return [row[0] for row in df.to_records(index=False)]
+        return [row[column_name] for row in df.to_records(index=False)]
 
     def get_query_str(  # noqa / druid
-            self, client, qry_start_dttm,
+            self,
             groupby, metrics,
             granularity,
             from_dttm, to_dttm,
@@ -735,12 +709,13 @@ class DruidDatasource(Model, BaseDatasource):
             orderby=None,
             extras=None,  # noqa
             select=None,  # noqa
-            columns=None, phase=2):
+            columns=None, phase=2, client=None):
         """Runs a query against Druid and returns a dataframe.
 
         This query interface is common to SqlAlchemy and Druid
         """
         # TODO refactor into using a TBD Query object
+        client = client or self.cluster.get_pydruid_client()
         if not is_timeseries:
             granularity = 'all'
         inner_from_dttm = inner_from_dttm or from_dttm
@@ -793,7 +768,7 @@ class DruidDatasource(Model, BaseDatasource):
                         mconf.get('probabilities', ''),
                     )
                 elif mconf.get('type') == 'fieldAccess':
-                    post_aggs[metric_name] = Field(mconf.get('name'), '')
+                    post_aggs[metric_name] = Field(mconf.get('name'))
                 elif mconf.get('type') == 'constant':
                     post_aggs[metric_name] = Const(
                         mconf.get('value'),
@@ -801,7 +776,7 @@ class DruidDatasource(Model, BaseDatasource):
                     )
                 elif mconf.get('type') == 'hyperUniqueCardinality':
                     post_aggs[metric_name] = HyperUniqueCardinality(
-                        mconf.get('name'), ''
+                        mconf.get('name')
                     )
                 else:
                     post_aggs[metric_name] = Postaggregator(
@@ -941,7 +916,7 @@ class DruidDatasource(Model, BaseDatasource):
     def query(self, query_obj):
         qry_start_dttm = datetime.now()
         client = self.cluster.get_pydruid_client()
-        query_str = self.get_query_str(client, qry_start_dttm, **query_obj)
+        query_str = self.get_query_str(client=client, **query_obj)
         df = client.export_pandas()
 
         if df is None or df.size == 0:
@@ -989,8 +964,12 @@ class DruidDatasource(Model, BaseDatasource):
             eq = flt['val']
             cond = None
             if op in ('in', 'not in'):
-                eq = [types.replace("'", '').strip() for types in eq]
-            elif not isinstance(flt['val'], basestring):
+                eq = [
+                    types.replace("'", '').strip()
+                    if isinstance(types, string_types)
+                    else types
+                    for types in eq]
+            elif not isinstance(flt['val'], string_types):
                 eq = eq[0] if len(eq) > 0 else ''
             if col in self.num_cols:
                 if op in ('in', 'not in'):
@@ -1069,6 +1048,16 @@ class DruidDatasource(Model, BaseDatasource):
             else:
                 filters = cond
         return filters
+
+    @classmethod
+    def query_datasources_by_name(
+            cls, session, database, datasource_name, schema=None):
+        return (
+            session.query(cls)
+            .filter_by(cluster_name=database.id)
+            .filter_by(datasource_name=datasource_name)
+            .all()
+        )
 
 sa.event.listen(DruidDatasource, 'after_insert', set_perm)
 sa.event.listen(DruidDatasource, 'after_update', set_perm)
