@@ -387,9 +387,10 @@ export function dashboardContainer(dashboard) {
 }
 
 $(document).ready(() => {
-    // Getting bootstrapped data from the DOM
-    const dashboardData = $('.dashboard').data('dashboard');
-    const contextData = $('.dashboard').data('context');
+  // Getting bootstrapped data from the DOM
+  utils.initJQueryAjaxCSRF();
+  const dashboardData = $('.dashboard').data('dashboard');
+  const contextData = $('.dashboard').data('context');
 
     const state = getInitialState(dashboardData, contextData);
     const dashboard = dashboardContainer(state.dashboard);

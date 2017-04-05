@@ -5,4 +5,10 @@
     {% include 'superset/flash_wrapper.html' %}
     <div id="root"></div>
 </div>
+<input
+  type="hidden"
+  name="csrf_token"
+  id="csrf_token"
+  value="{{ csrf_token() if csrf_token else '' }}"
+>
 {% endblock %}
