@@ -493,7 +493,10 @@ class SqlaTable(Model, BaseDatasource):
         elif orderby:
             for col, ascending in orderby:
                 direction = asc if ascending else desc
-                qry = qry.order_by(direction(col))
+                if col not in columns:
+                    qry = qry.order_by(direction(cols[col].sqla_col))
+                else:
+                    qry = qry.order_by(direction(col))
 
         qry = qry.limit(row_limit)
 

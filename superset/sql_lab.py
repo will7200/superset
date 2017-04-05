@@ -121,9 +121,7 @@ def get_sql_results(self, query_id, return_results=True, store_results=False):
     query.status = QueryStatus.RUNNING
     session.flush()
     try:
-        logging.info("Handling cursor")
         db_engine_spec.handle_cursor(cursor, query, session)
-        logging.info("Fetching data: {}".format(query.to_dict()))
         data = db_engine_spec.fetch_data(cursor, query.limit)
     except Exception as e:
         logging.exception(e)
