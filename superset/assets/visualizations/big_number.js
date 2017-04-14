@@ -72,13 +72,9 @@ function bigNumberVis(slice, payload) {
   let y = height / 2;
   let g = svg.append('g');
 
-  const formattedNumber = f(v);
-
+  const formattedNumber = isNaN(f(v)) ? v : f(v);
   // Printing big number
-  let bigNumberFontSize = (width / formattedNumber.length) * 1.3;
-  if (formattedNumber.length === 1) {
-    bigNumberFontSize = (width / 2) * 1.3;
-  }
+  let bigNumberFontSize = (height / 16) * 6;
   g.append('g')
     .attr('class', 'digits')
     .attr('opacity', 1)
@@ -98,10 +94,10 @@ function bigNumberVis(slice, payload) {
 
   // Printing big number subheader text
   if (json.subheader) {
-    const fontSize = (width / json.subheader.length) * 1.5;
+    const fontSize = (height / 16) * 2;
     g.append('text')
       .attr('x', width / 2)
-      .attr('y', (height / 16) * 12)
+      .attr('y', (height / 16) * 14)
       .text(json.subheader)
       .attr('id', 'subheader_text')
       .attr('font-family', 'Roboto')
