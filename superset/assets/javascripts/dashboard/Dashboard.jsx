@@ -113,7 +113,10 @@ export function dashboardContainer(dashboard) {
                 }
             });
             this.loadPreSelectFilters();
-            this.startPeriodicRender(0);
+            var periodRender = this.metadata.periodRender * 1000 || 0;
+            this.hardRefreshInterval = this.metadata.hardRefreshInterval * 60 || 3600;
+            this.hardRefreshAt = new Date();
+            this.startPeriodicRender(periodRender);
             this.bindResizeToWindowResize();
         },
         loadMetadata(){
@@ -301,6 +304,12 @@ export function dashboardContainer(dashboard) {
 
             const fetchAndRender = function() {
                 refreshAll();
+                var now = new Date()
+                var diff = now - dash.hardRefreshAt
+                diff /= 1000
+                if (diff > dash.hardRefreshInterval){
+                    location.reload(true)
+                }
                 if (interval > 0) {
                     dash.refreshTimer = setTimeout(function() {
                         fetchAndRender();

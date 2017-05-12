@@ -321,7 +321,7 @@ class SqlaTable(Model, BaseDatasource):
                 compile_kwargs={"literal_binds": True}
             )
         )
-        logging.info(sql)
+        #logging.info(sql)
         sql = sqlparse.format(sql, reindent=True)
         sql = self.database.db_engine_spec.sql_preprocessor(sql)
         return sql
@@ -532,7 +532,6 @@ class SqlaTable(Model, BaseDatasource):
                     groupby_exprs[i] == column(gb + '__'))
 
             tbl = tbl.join(subq.alias(), and_(*on_clause))
-
         return qry.select_from(tbl)
 
     def query(self, query_obj):
@@ -540,6 +539,7 @@ class SqlaTable(Model, BaseDatasource):
         engine = self.database.get_sqla_engine()
         qry = self.get_sqla_query(**query_obj)
         sql = self.get_query_str(**query_obj)
+        #logging.info(sql)
         status = QueryStatus.SUCCESS
         error_message = None
         df = None

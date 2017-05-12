@@ -925,7 +925,13 @@ export const controls = {
     renderTrigger: true,
     description: 'Whether to display bubbles on top of countries',
   },
-
+  fill_missing: {
+      type: 'CheckboxControl',
+      label: 'Fill Missing Time Intervals',
+      default: false,
+      renderTrigger: false,
+      description: 'Fill the missing timestamp between the two dates'
+  },
   show_legend: {
     type: 'CheckboxControl',
     label: 'Legend',

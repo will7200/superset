@@ -229,6 +229,7 @@ const visTypes = {
           ['x_axis_format', 'y_axis_format'],
           ['x_axis_showminmax', 'show_controls'],
           ['line_interpolation', 'stacked_style'],
+          ['fill_missing'],
         ],
       },
       sections.NVD3TimeSeries[1],

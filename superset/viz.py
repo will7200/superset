@@ -249,8 +249,8 @@ class BaseViz(object):
                 'stacktrace': stacktrace,
             }
             payload['cached_dttm'] = datetime.now().isoformat().split('.')[0]
-            logging.info("Caching for the next {} seconds".format(
-                cache_timeout))
+            #logging.info("Caching for the next {} seconds".format(
+            #    cache_timeout))
             data = self.json_dumps(payload)
             if PY3:
                 data = bytes(data, 'utf-8')
@@ -938,7 +938,13 @@ class NVD3TimeSeriesViz(NVD3Viz):
             }
             chart_data.append(d)
         return chart_data
-
+    def get_time_domain(self,x):
+        return {
+            'hour': {'f':'H','strip':{'minute':0,'second':0}},
+            'second': {'f':'S','strip':{}},
+            'minute': {'f':'T','strip':{'second':0}},
+            'day': {'f':'D','strip':{'hour':0,'minute':0,'second':0}},
+        }[x]
     def get_data(self, df):
         fd = self.form_data
         df = df.fillna(0)
@@ -949,7 +955,20 @@ class NVD3TimeSeriesViz(NVD3Viz):
             index=DTTM_ALIAS,
             columns=fd.get('groupby'),
             values=fd.get('metrics'))
-
+        fill_missing = fd.get('fill_missing')
+        if fill_missing:
+            ef = self.get_extra_filters()
+            granularity = fd.get("time_grain_sqla")
+            since = (ef.get('__from') or fd.get("since", "1 year ago"))
+            from_dttm = utils.parse_human_datetime(since)
+            now = datetime.now()
+            if from_dttm > now:
+                from_dttm = now - (from_dttm - now)
+            until = ef.get('__to') or ef.get("until", "now")
+            to_dttm = utils.parse_human_datetime(until)
+            freq = self.get_time_domain(granularity) if self.get_time_domain(granularity) != None else None
+            idx = pd.date_range(from_dttm.replace(**freq.get('strip')),to_dttm,freq=freq.get('f'))
+            df = df.reindex(idx,fill_value = 0)
         fm = fd.get("resample_fillmethod")
         if not fm:
             fm = None
@@ -959,7 +978,6 @@ class NVD3TimeSeriesViz(NVD3Viz):
             df = df.resample(rule, how=how, fill_method=fm)
             if not fm:
                 df = df.fillna(0)
-
         if self.sort_series:
             dfs = df.sum()
             dfs.sort_values(ascending=False, inplace=True)
@@ -981,7 +999,6 @@ class NVD3TimeSeriesViz(NVD3Viz):
                 df = pd.rolling_sum(df, int(rolling_periods), min_periods=0)
         elif rolling_type == 'cumsum':
             df = df.cumsum()
-
         num_period_compare = fd.get("num_period_compare")
         if num_period_compare:
             num_period_compare = int(num_period_compare)
@@ -994,9 +1011,7 @@ class NVD3TimeSeriesViz(NVD3Viz):
                 df = df / df.shift(num_period_compare)
 
             df = df[num_period_compare:]
-
         chart_data = self.to_series(df)
-
         time_compare = fd.get('time_compare')
         if time_compare:
             query_object = self.query_obj()
