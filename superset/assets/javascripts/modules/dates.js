@@ -63,14 +63,14 @@ export const tickMultiFormat = d3.time.format.multi([
   ], // fall back on month, year
 ]);
 export const formatDate = function(dttm) {
-  const d = UTC(new Date(dttm));
+  const d = new Date(dttm);
   // d = new Date(d.getTime() - 1 * 60 * 60 * 1000);
   return tickMultiFormat(d);
 };
 export const timeFormatFactory = function(d3timeFormat) {
   const f = d3.time.format(d3timeFormat);
   return function(dttm) {
-    const d = UTC(new Date(dttm));
+    const d = new Date(dttm);
     return f(d);
   };
 };

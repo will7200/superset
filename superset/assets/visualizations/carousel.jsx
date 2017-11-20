@@ -79,7 +79,7 @@ class Carousel extends React.Component {
 }
 Carousel.propTypes = propTypes;
 Carousel.defaultProps = defaultProps;
-const dateFormat = 'DD/MM/YYYY H:mm:ss'
+const dateFormat = 'MM/DD/YYYY H:mm:ss'
 function carousel(slice, payload) {
     const fd = slice.formData;
     var settings
