@@ -165,6 +165,14 @@ export const visTypes = {
           ['color_scheme'],
         ],
       },
+      {
+        label: t('Drilldown Area'),
+        controlSetRows: [
+         ['drillDownEndpoint'],
+         ['drillWhere'],
+         ['drilldown_field'],
+        ],
+      }
     ],
   },
 
@@ -754,6 +762,7 @@ export const visTypes = {
           ['line_interpolation', 'stacked_style'],
           ['color_scheme'],
           ['rich_tooltip', 'show_controls'],
+          ['fill_missing'],
         ],
       },
       {
@@ -821,6 +830,14 @@ export const visTypes = {
           ['align_pn', 'color_pn'],
         ],
       },
+      {
+        label: t('Drilldown Area'),
+        controlSetRows: [
+         ['drillDownEndpoint'],
+         ['drillWhere'],
+         ['drilldown_field'],
+        ],
+      }
     ],
     controlOverrides: {
       metrics: {
@@ -1121,6 +1138,13 @@ export const visTypes = {
           ['y_axis_format', null],
         ],
       },
+      {
+        label: t('Drilldown Area'),
+        controlSetRows: [
+         ['drillDownEndpoint'],
+         ['drillWhere'],
+        ],
+      }
     ],
     controlOverrides: {
       y_axis_format: {
@@ -1147,6 +1171,13 @@ export const visTypes = {
           ['y_axis_format'],
         ],
       },
+      {
+        label: t('Drilldown Area'),
+        controlSetRows: [
+         ['drillDownEndpoint'],
+         ['drillWhere'],
+        ],
+      }
     ],
     controlOverrides: {
       y_axis_format: {

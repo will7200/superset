@@ -275,7 +275,44 @@ export const controls = {
       datasourceType: state.datasource && state.datasource.type,
     }),
   },
-
+  drillDownEndpoint: {
+    type: 'SelectControl',
+    label: 'Drilldown Slice ID',
+    default: [],
+    multi: true,
+    freeForm: true,
+    description: 'Needed for drilldown endpoint'
+  },
+  drillWhere: {
+    type: 'TextControl',
+    label: 'DrillDown  WHERE clause',
+    default: '',
+    description: 'Custom where clause for DrillDowns'
+  },
+  drilldown_field:{
+    type: 'SelectControl',
+    label: 'Drilldown Field',
+    multi: true,
+    default: [],
+    description: 'Specify which column will drill into the next',
+    mapStateToProps: (state) => ({
+      choices: (state.datasource) ? state.datasource.gb_cols : [],
+    }),
+  },
+  carouselFormat:{
+      type: 'SelectControl',
+      label: 'Format for the Carousel',
+      default: null,
+      freeForm: true,
+      description: 'Id number for the Formatting used'
+  },
+  fill_missing: {
+      type: 'CheckboxControl',
+      label: 'Fill Missing Time Intervals',
+      default: false,
+      renderTrigger: false,
+      description: 'Fill the missing timestamp between the two dates'
+  },
   metric_2: {
     type: 'SelectControl',
     label: t('Right Axis Metric'),
