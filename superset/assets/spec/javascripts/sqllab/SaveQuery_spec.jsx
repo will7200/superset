@@ -1,10 +1,10 @@
 import React from 'react';
-import SaveQuery from '../../../javascripts/SqlLab/components/SaveQuery';
-import { Overlay, Popover, FormControl } from 'react-bootstrap';
-import { shallow, mount } from 'enzyme';
+import { FormControl } from 'react-bootstrap';
+import { shallow } from 'enzyme';
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
-
+import SaveQuery from '../../../javascripts/SqlLab/components/SaveQuery';
+import ModalTrigger from '../../../javascripts/components/ModalTrigger';
 
 describe('SavedQuery', () => {
   const mockedProps = {
@@ -16,33 +16,26 @@ describe('SavedQuery', () => {
   };
   it('is valid', () => {
     expect(
-      React.isValidElement(<SaveQuery />)
+      React.isValidElement(<SaveQuery />),
     ).to.equal(true);
   });
   it('is valid with props', () => {
     expect(
-      React.isValidElement(<SaveQuery {...mockedProps} />)
+      React.isValidElement(<SaveQuery {...mockedProps} />),
     ).to.equal(true);
   });
-  it('has an Overlay and a Popover', () => {
+  it('has a ModalTrigger', () => {
     const wrapper = shallow(<SaveQuery {...mockedProps} />);
-    expect(wrapper.find(Overlay)).to.have.length(1);
-    expect(wrapper.find(Popover)).to.have.length(1);
-  });
-  it('pops and hides', () => {
-    const wrapper = mount(<SaveQuery {...mockedProps} />);
-    expect(wrapper.state().showSave).to.equal(false);
-    wrapper.find('.toggleSave').simulate('click');
-    expect(wrapper.state().showSave).to.equal(true);
-    wrapper.find('.toggleSave').simulate('click');
-    expect(wrapper.state().showSave).to.equal(false);
+    expect(wrapper.find(ModalTrigger)).to.have.length(1);
   });
   it('has a cancel button', () => {
     const wrapper = shallow(<SaveQuery {...mockedProps} />);
-    expect(wrapper.find('.cancelQuery')).to.have.length(1);
+    const modal = shallow(wrapper.instance().renderModalBody());
+    expect(modal.find('.cancelQuery')).to.have.length(1);
   });
   it('has 2 FormControls', () => {
     const wrapper = shallow(<SaveQuery {...mockedProps} />);
-    expect(wrapper.find(FormControl)).to.have.length(2);
+    const modal = shallow(wrapper.instance().renderModalBody());
+    expect(modal.find(FormControl)).to.have.length(2);
   });
 });

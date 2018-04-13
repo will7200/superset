@@ -1,21 +1,26 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { DropdownButton, MenuItem, Tab, Tabs } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+import URI from 'urijs';
+
 import * as Actions from '../actions';
 import SqlEditor from './SqlEditor';
 import CopyQueryTabUrl from './CopyQueryTabUrl';
 import { areArraysShallowEqual } from '../../reduxUtils';
-import URI from 'urijs';
+import { t } from '../../locales';
+import TabStatusIcon from './TabStatusIcon';
 
 const propTypes = {
-  actions: React.PropTypes.object.isRequired,
-  databases: React.PropTypes.object.isRequired,
-  queries: React.PropTypes.object.isRequired,
-  queryEditors: React.PropTypes.array,
-  tabHistory: React.PropTypes.array.isRequired,
-  tables: React.PropTypes.array.isRequired,
-  editorHeight: React.PropTypes.string.isRequired,
+  actions: PropTypes.object.isRequired,
+  defaultDbId: PropTypes.number,
+  databases: PropTypes.object.isRequired,
+  queries: PropTypes.object.isRequired,
+  queryEditors: PropTypes.array,
+  tabHistory: PropTypes.array.isRequired,
+  tables: PropTypes.array.isRequired,
+  getHeight: PropTypes.func.isRequired,
 };
 const defaultProps = {
   queryEditors: [],
@@ -68,11 +73,6 @@ class TabbedSqlEditors extends React.PureComponent {
       this.popNewTab();
     }
   }
-  popNewTab() {
-    queryCount++;
-    // Clean the url in browser history
-    window.history.replaceState({}, document.title, this.state.sqlLabUrl);
-  }
   componentWillReceiveProps(nextProps) {
     const nextActiveQeId = nextProps.tabHistory[nextProps.tabHistory.length - 1];
     const queriesArray = [];
@@ -96,9 +96,14 @@ class TabbedSqlEditors extends React.PureComponent {
       this.setState({ dataPreviewQueries });
     }
   }
+  popNewTab() {
+    queryCount++;
+    // Clean the url in browser history
+    window.history.replaceState({}, document.title, this.state.sqlLabUrl);
+  }
   renameTab(qe) {
     /* eslint no-alert: 0 */
-    const newTitle = prompt('Enter a new title for the tab');
+    const newTitle = prompt(t('Enter a new title for the tab'));
     if (newTitle) {
       this.props.actions.queryEditorSetTitle(qe, newTitle);
     }
@@ -117,7 +122,7 @@ class TabbedSqlEditors extends React.PureComponent {
     queryCount++;
     const activeQueryEditor = this.activeQueryEditor();
     const qe = {
-      title: `Untitled Query ${queryCount}`,
+      title: t('Untitled Query %s', queryCount),
       dbId: (activeQueryEditor && activeQueryEditor.dbId) ?
         activeQueryEditor.dbId :
         this.props.defaultDbId,
@@ -156,17 +161,17 @@ class TabbedSqlEditors extends React.PureComponent {
 
       const tabTitle = (
         <div>
-          <div className={'circle ' + state} /> {qe.title} {' '}
+          <TabStatusIcon onClose={this.removeQueryEditor.bind(this, qe)} tabState={state} /> {qe.title} {' '}
           <DropdownButton
             bsSize="small"
             id={'ddbtn-tab-' + i}
             title=""
           >
             <MenuItem eventKey="1" onClick={this.removeQueryEditor.bind(this, qe)}>
-              <i className="fa fa-close" /> close tab
+              <i className="fa fa-close" /> {t('close tab')}
             </MenuItem>
             <MenuItem eventKey="2" onClick={this.renameTab.bind(this, qe)}>
-              <i className="fa fa-i-cursor" /> rename tab
+              <i className="fa fa-i-cursor" /> {t('rename tab')}
             </MenuItem>
             {qe &&
               <CopyQueryTabUrl queryEditor={qe} />
@@ -174,7 +179,7 @@ class TabbedSqlEditors extends React.PureComponent {
             <MenuItem eventKey="4" onClick={this.toggleLeftBar.bind(this)}>
               <i className="fa fa-cogs" />
               &nbsp;
-              {this.state.hideLeftBar ? 'expand tool bar' : 'hide tool bar'}
+              {this.state.hideLeftBar ? t('expand tool bar') : t('hide tool bar')}
             </MenuItem>
           </DropdownButton>
         </div>
@@ -189,8 +194,8 @@ class TabbedSqlEditors extends React.PureComponent {
             <div className="panel-body">
               {isSelected &&
                 <SqlEditor
-                  height={this.props.editorHeight}
-                  tables={this.props.tables.filter((t) => (t.queryEditorId === qe.id))}
+                  getHeight={this.props.getHeight}
+                  tables={this.props.tables.filter(xt => (xt.queryEditorId === qe.id))}
                   queryEditor={qe}
                   editorQueries={this.state.queriesArray}
                   dataPreviewQueries={this.state.dataPreviewQueries}

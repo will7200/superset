@@ -1,8 +1,10 @@
-{% extends "superset/basic.html" %} {% block head_js %} {{ super() }} {% with filename="dashboard" %} {% include "superset/partials/_script_tag.html" %} {% endwith %} {% endblock %} {% block title %}[dashboard] {{ dashboard.dashboard_title }}{% endblock
-%} {% block body %}
+{% extends "superset/basic.html" %}
 
-<div class="dashboard container-fluid" data-dashboard="{{ dashboard.json_data }}" data-context="{{ context }}">
-    {% include 'superset/flash_wrapper.html' %}
-    <div id="root"></div>
+{% block body %}
+<div
+  id="app"
+  class="dashboard container-fluid"
+  data-bootstrap="{{ bootstrap_data }}"
+>
 </div>
 {% endblock %}

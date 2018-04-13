@@ -2,8 +2,10 @@
     overflow: auto !important;
 }
 
-.widget.table table {
+.slice_container.table table.table {
     margin: 0px !important;
+    background: transparent;
+    background-color: white;
 }
 
 .widget.table td.filtered {
@@ -11,28 +13,33 @@
     color: white;
 }
 
-.widget.table tr>th {
+.widget.table tr > th {
     padding: 1px 5px !important;
-    font-size: small;
+    font-size: small !important;
 }
 
-.widget.table tr>td {
+.widget.table tr > td {
     padding: 1px 5px !important;
-    font-size: small;
+    font-size: small !important;
 }
+
 table.table thead th.sorting:after, table.table thead th.sorting_asc:after, table.table thead th.sorting_desc:after {
     top: 0px;
 }
-.dataTables_wrapper{
+
+.dataTables_wrapper {
     margin: 10px;
 }
+
 .like-pre {
-  white-space: pre-wrap;
+    white-space: pre-wrap;
 }
 
-table.table tr > th {
-    font-size: 16px;
+.widget.table thead tr {
+    height: 25px;
 }
-table.table tr > td {
-    font-size: 20px;
+
+.dashboard .slice_container.table {
+    padding-left: 10px;
+    padding-right: 10px;
 }

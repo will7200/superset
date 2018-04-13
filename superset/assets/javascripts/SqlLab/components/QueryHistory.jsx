@@ -1,11 +1,13 @@
 import React from 'react';
-
-import QueryTable from './QueryTable';
+import PropTypes from 'prop-types';
 import { Alert } from 'react-bootstrap';
 
+import QueryTable from './QueryTable';
+import { t } from '../../locales';
+
 const propTypes = {
-  queries: React.PropTypes.array.isRequired,
-  actions: React.PropTypes.object.isRequired,
+  queries: PropTypes.array.isRequired,
+  actions: PropTypes.object.isRequired,
 };
 
 const QueryHistory = (props) => {
@@ -23,7 +25,7 @@ const QueryHistory = (props) => {
   }
   return (
     <Alert bsStyle="info">
-      No query history yet...
+      {t('No query history yet...')}
     </Alert>
   );
 };

@@ -1,21 +1,22 @@
-const $ = window.$ = require('jquery');
-import * as Actions from '../actions';
 import React from 'react';
+import PropTypes from 'prop-types';
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
 
 import TabbedSqlEditors from './TabbedSqlEditors';
 import QueryAutoRefresh from './QueryAutoRefresh';
 import QuerySearch from './QuerySearch';
 import AlertsWrapper from '../../components/AlertsWrapper';
+import * as Actions from '../actions';
 
-import { bindActionCreators } from 'redux';
-import { connect } from 'react-redux';
+const $ = window.$ = require('jquery');
 
 class App extends React.PureComponent {
   constructor(props) {
     super(props);
     this.state = {
       hash: window.location.hash,
-      contentHeight: this.getHeight(),
+      contentHeight: '0px',
     };
   }
   componentDidMount() {
@@ -28,19 +29,25 @@ class App extends React.PureComponent {
     window.removeEventListener('hashchange', this.onHashChanged.bind(this));
     window.removeEventListener('resize', this.handleResize.bind(this));
   }
+  onHashChanged() {
+    this.setState({ hash: window.location.hash });
+  }
   getHeight() {
-    const navHeight = 90;
-    const headerHeight = $('.nav-tabs').outerHeight() ?
-      $('.nav-tabs').outerHeight() : $('#search-header').outerHeight();
-    const warningHeight = $('#navbar-warning').outerHeight();
-    const alertHeight = $('#sqllab-alerts').outerHeight();
-    return `${window.innerHeight - navHeight - headerHeight - warningHeight - alertHeight}px`;
+    const warningEl = $('#navbar-warning');
+    const tabsEl = $('.nav-tabs');
+    const searchHeaderEl = $('#search-header');
+    const alertEl = $('#sqllab-alerts');
+    const headerEl = $('header .navbar');
+    const headerHeight = headerEl.outerHeight() + parseInt(headerEl.css('marginBottom'), 10);
+    const searchHeaderHeight = searchHeaderEl.length > 0 ?
+      searchHeaderEl.outerHeight() + parseInt(searchHeaderEl.css('marginBottom'), 10) : 0;
+    const tabsHeight = tabsEl.length > 0 ? tabsEl.outerHeight() : searchHeaderHeight;
+    const warningHeight = warningEl.length > 0 ? warningEl.outerHeight() : 0;
+    const alertHeight = alertEl.length > 0 ? alertEl.outerHeight() : 0;
+    return `${window.innerHeight - headerHeight - tabsHeight - warningHeight - alertHeight}px`;
   }
   handleResize() {
     this.setState({ contentHeight: this.getHeight() });
-  }
-  onHashChanged() {
-    this.setState({ hash: window.location.hash });
   }
   render() {
     let content;
@@ -58,13 +65,13 @@ class App extends React.PureComponent {
       content = (
         <div>
           <QueryAutoRefresh />
-          <TabbedSqlEditors editorHeight={this.state.contentHeight} />
+          <TabbedSqlEditors getHeight={this.getHeight} />
         </div>
       );
     }
     return (
       <div className="App SqlLab">
-        <AlertsWrapper />
+        <AlertsWrapper initMessages={this.props.initMessages} />
         <div className="container-fluid">
           {content}
         </div>
@@ -74,13 +81,15 @@ class App extends React.PureComponent {
 }
 
 App.propTypes = {
-  alerts: React.PropTypes.array,
-  actions: React.PropTypes.object,
+  alerts: PropTypes.array,
+  actions: PropTypes.object,
+  initMessages: PropTypes.array,
 };
 
 function mapStateToProps(state) {
   return {
     alerts: state.alerts,
+    initMessages: state.flash_messages,
   };
 }
 function mapDispatchToProps(dispatch) {

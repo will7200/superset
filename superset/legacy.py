@@ -1,13 +1,15 @@
+# -*- coding: utf-8 -*-
 """Code related with dealing with legacy / change management"""
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from superset import frontend_config
 import re
 
-FORM_DATA_KEY_WHITELIST = list(frontend_config.get('fields').keys()) + ['slice_id']
+from superset import frontend_config
+
+FORM_DATA_KEY_WHITELIST = list(frontend_config.get('controls').keys()) + ['slice_id']
 
 
 def cast_filter_data(form_data):
@@ -15,7 +17,7 @@ def cast_filter_data(form_data):
     flts = []
     having_flts = []
     fd = form_data
-    filter_pattern = re.compile(r'''((?:[^,"']|"[^"]*"|'[^']*')+)''')
+    filter_pattern = re.compile(r"""((?:[^,"']|"[^"]*"|'[^']*')+)""")
     for i in range(0, 10):
         for prefix in ['flt', 'having']:
             col_str = '{}_col_{}'.format(prefix, i)
@@ -49,21 +51,21 @@ def cast_filter_data(form_data):
 def cast_form_data(form_data):
     """Translates old to new form_data"""
     d = {}
-    fields = frontend_config.get('fields', {})
+    fields = frontend_config.get('controls', {})
     for k, v in form_data.items():
         field_config = fields.get(k, {})
         ft = field_config.get('type')
-        if ft == 'CheckboxField':
+        if ft == 'CheckboxControl':
             # bug in some urls with dups on bools
             if isinstance(v, list):
                 v = 'y' in v
             else:
                 v = True if v in ('true', 'y') or v is True else False
-        elif v and ft == 'TextField' and field_config.get('isInt'):
+        elif v and ft == 'TextControl' and field_config.get('isInt'):
             v = int(v) if v != '' else None
-        elif v and ft == 'TextField' and field_config.get('isFloat'):
+        elif v and ft == 'TextControl' and field_config.get('isFloat'):
             v = float(v) if v != '' else None
-        elif v and ft == 'SelectField':
+        elif v and ft == 'SelectControl':
             if field_config.get('multi'):
                 if type(form_data).__name__ == 'ImmutableMultiDict':
                     v = form_data.getlist(k)
@@ -79,5 +81,3 @@ def cast_form_data(form_data):
         if k not in FORM_DATA_KEY_WHITELIST:
             del d[k]
     return d
-
-

@@ -3,8 +3,14 @@
     border: 1px superset black;
 }
 
-.dashboard .filter_box .slice_container > div {
+.dashboard .filter_box .slice_container > div:not(.alert) {
     padding-top: 0;
+}
+
+.input-inline {
+    float: left;
+    display: inline-block;
+    padding-right: 3px;
 }
 
 ul.select2-results li.select2-highlighted div.filter_box{

@@ -1,6 +1,6 @@
-/* eslint-disable no-shadow, no-param-reassign, no-underscore-dangle, no-use-before-define*/
+/* eslint-disable no-shadow, no-param-reassign, no-underscore-dangle, no-use-before-define */
 import d3 from 'd3';
-import { category21 } from '../javascripts/modules/colors';
+import { getColorFromScheme } from '../javascripts/modules/colors';
 
 require('./treemap.css');
 
@@ -34,6 +34,7 @@ function treemap(slice, payload) {
         .round(false);
 
     const svg = div.append('svg')
+        .attr('class', 'treemap')
         .attr('width', eltWidth)
         .attr('height', eltHeight);
 
@@ -44,7 +45,7 @@ function treemap(slice, payload) {
 
     const grandparent = svg.append('g')
         .attr('class', 'grandparent')
-        .attr('transform', 'translate(0,' + (margin.top + navBarBuffer / 2) + ')');
+        .attr('transform', 'translate(0,' + (margin.top + (navBarBuffer / 2)) + ')');
 
     grandparent.append('rect')
         .attr('width', width)
@@ -52,12 +53,13 @@ function treemap(slice, payload) {
 
     grandparent.append('text')
         .attr('x', width / 2)
-        .attr('y', navBarHeight / 2 + navBarTitleSize / 2)
+        .attr('y', (navBarHeight / 2) + (navBarTitleSize / 2))
         .style('font-size', navBarTitleSize + 'px')
         .style('text-anchor', 'middle');
 
     const initialize = function (root) {
-      root.x = root.y = 0;
+      root.x = 0;
+      root.y = 0;
       root.dx = width;
       root.dy = height;
       root.depth = 0;
@@ -86,8 +88,8 @@ function treemap(slice, payload) {
       if (d._children) {
         treemap.nodes({ _children: d._children });
         d._children.forEach(function (c) {
-          c.x = d.x + c.x * d.dx;
-          c.y = d.y + c.y * d.dy;
+          c.x = d.x + (c.x * d.dx);
+          c.y = d.y + (c.y * d.dy);
           c.dx *= d.dx;
           c.dy *= d.dy;
           c.parent = d;
@@ -183,7 +185,7 @@ function treemap(slice, payload) {
           .text(function (d) { return formatNumber(d.value); });
       t.call(text);
       g.selectAll('rect')
-          .style('fill', function (d) { return category21(d.name); });
+          .style('fill', function (d) { return getColorFromScheme(d.name, formData.color_scheme); });
 
       return g;
     };
@@ -216,7 +218,7 @@ function treemap(slice, payload) {
     const name = function (d) {
       return d.parent
           ? name(d.parent) + ' / ' + d.name + ' (' + formatNumber(d.value) + ')'
-          : d.name + ' (' + formatNumber(d.value) + ')';
+          : (slice.datasource.verbose_map[d.name] || d.name) + ' (' + formatNumber(d.value) + ')';
     };
 
     initialize(data);
@@ -229,7 +231,7 @@ function treemap(slice, payload) {
   div.selectAll('*').remove();
   const width = slice.width();
   const height = slice.height() / payload.data.length;
-  for (let i = 0, l = payload.data.length; i < l; i ++) {
+  for (let i = 0, l = payload.data.length; i < l; i += 1) {
     _draw(payload.data[i], width, height, slice.formData);
   }
 }

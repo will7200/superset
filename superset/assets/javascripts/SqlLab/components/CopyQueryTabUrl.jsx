@@ -1,9 +1,11 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import CopyToClipboard from '../../components/CopyToClipboard';
-import { storeQuery } from '../../../utils/common';
+import { storeQuery } from '../../utils/common';
+import { t } from '../../locales';
 
 const propTypes = {
-  queryEditor: React.PropTypes.object.isRequired,
+  queryEditor: PropTypes.object.isRequired,
 };
 
 export default class CopyQueryTabUrl extends React.PureComponent {
@@ -25,10 +27,10 @@ export default class CopyQueryTabUrl extends React.PureComponent {
         inMenu
         copyNode={(
           <div>
-            <i className="fa fa-clipboard" /> <span>share query</span>
+            <i className="fa fa-clipboard" /> <span>{t('share query')}</span>
           </div>
         )}
-        tooltipText="copy URL to clipboard"
+        tooltipText={t('copy URL to clipboard')}
         shouldShowText={false}
         getText={this.getUrl.bind(this)}
       />

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """query.start_running_time
 
 Revision ID: a6c18f869a4e
@@ -11,7 +12,6 @@ import sqlalchemy as sa
 # revision identifiers, used by Alembic.
 revision = 'a6c18f869a4e'
 down_revision = '979c03af3341'
-
 
 
 def upgrade():

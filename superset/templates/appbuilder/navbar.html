@@ -1,8 +1,9 @@
 {% set menu = appbuilder.menu %}
 {% set languages = appbuilder.languages %}
+{% set WARNING_MSG = appbuilder.app.config.get('WARNING_MSG') %}
 
 <div class="navbar navbar-static-top {{menu.extra_classes}}" role="navigation">
-  <div class="container{{ '-fluid' if not navbar_container else '' }}">
+  <div class="container-fluid">
     <div class="navbar-header">
       <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
         <span class="icon-bar"></span>
@@ -18,6 +19,11 @@
     </div>
     <div class="navbar-collapse collapse">
       <ul class="nav navbar-nav">
+        {% if WARNING_MSG %}
+          <li class="alert alert-danger">
+            {{ WARNING_MSG | safe }}
+          </li>
+        {% endif %}
         {% include 'appbuilder/navbar_menu.html' %}
       </ul>
       <ul class="nav navbar-nav navbar-right">
@@ -27,26 +33,17 @@
           </a>
         </li>
         <li>
-          <a href="https://github.com/airbnb/superset" title="Superset's Github">
+          <a href="https://github.com/apache/incubator-superset" title="Superset's Github" target="_blank">
             <i class="fa fa-github"></i> &nbsp;
           </a>
         </li>
         <li>
-          <a href="http://superset.apache.org/" title="Documentation">
+          <a href="https://superset.incubator.apache.org" title="Documentation" target="_blank">
             <i class="fa fa-book"></i> &nbsp;
           </a>
         </li>
-        {% include 'appbuilder/navbar_right.html' %}
       </ul>
     </div>
   </div>
 </div>
 
-{% set WARNING_MSG = appbuilder.app.config.get('WARNING_MSG') %}
-{% if WARNING_MSG %}
-  <div class="container">
-    <div id="navbar-warning" class="alert alert-danger">
-      {{ WARNING_MSG | safe }}
-    </div>
-  </div>
-{% endif %}

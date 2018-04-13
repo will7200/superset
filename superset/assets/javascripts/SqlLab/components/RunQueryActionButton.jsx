@@ -1,23 +1,26 @@
-import React, { PropTypes } from 'react';
+import React from 'react';
+import PropTypes from 'prop-types';
 import Button from '../../components/Button';
+import { t } from '../../locales';
 
 const propTypes = {
   allowAsync: PropTypes.bool.isRequired,
   dbId: PropTypes.number,
-  queryState: PropTypes.string.isRequired,
+  queryState: PropTypes.string,
   runQuery: PropTypes.func.isRequired,
   selectedText: PropTypes.string,
   stopQuery: PropTypes.func.isRequired,
+  sql: PropTypes.string.isRequired,
 };
 const defaultProps = {
   allowAsync: false,
+  sql: '',
 };
 
 export default function RunQueryActionButton(props) {
-  const runBtnText = props.selectedText ? 'Run Selected Query' : 'Run Query';
+  const runBtnText = props.selectedText ? t('Run Selected Query') : t('Run Query');
   const btnStyle = props.selectedText ? 'warning' : 'primary';
   const shouldShowStopBtn = ['running', 'pending'].indexOf(props.queryState) > -1;
-  const asyncToolTip = 'Run query asynchronously';
 
   const commonBtnProps = {
     bsSize: 'small',
@@ -30,6 +33,8 @@ export default function RunQueryActionButton(props) {
       {...commonBtnProps}
       onClick={() => props.runQuery(false)}
       key="run-btn"
+      tooltip={t('Run query synchronously')}
+      disabled={!props.sql.trim()}
     >
       <i className="fa fa-refresh" /> {runBtnText}
     </Button>
@@ -40,7 +45,8 @@ export default function RunQueryActionButton(props) {
       {...commonBtnProps}
       onClick={() => props.runQuery(true)}
       key="run-async-btn"
-      tooltip={asyncToolTip}
+      tooltip={t('Run query asynchronously')}
+      disabled={!props.sql.trim()}
     >
       <i className="fa fa-table" /> {runBtnText}
     </Button>
@@ -51,7 +57,7 @@ export default function RunQueryActionButton(props) {
       {...commonBtnProps}
       onClick={props.stopQuery}
     >
-      <i className="fa fa-stop" /> Stop
+      <i className="fa fa-stop" /> {t('Stop')}
     </Button>
   );
 
@@ -63,12 +69,7 @@ export default function RunQueryActionButton(props) {
   } else {
     button = syncBtn;
   }
-
-  return (
-    <div className="inline m-r-5 pull-left">
-      {button}
-    </div>
-  );
+  return button;
 }
 
 RunQueryActionButton.propTypes = propTypes;

@@ -1,22 +1,25 @@
+import React from 'react';
+import PropTypes from 'prop-types';
+import shortid from 'shortid';
 import { Alert, Tab, Tabs } from 'react-bootstrap';
-import QueryHistory from './QueryHistory';
-import ResultSet from './ResultSet';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import * as Actions from '../actions';
-import React from 'react';
 
-import shortid from 'shortid';
+import * as Actions from '../actions';
+import QueryHistory from './QueryHistory';
+import ResultSet from './ResultSet';
+import { t } from '../../locales';
 
 /*
     editorQueries are queries executed by users passed from SqlEditor component
     dataPrebiewQueries are all queries executed for preview of table data (from SqlEditorLeft)
 */
 const propTypes = {
-  editorQueries: React.PropTypes.array.isRequired,
-  dataPreviewQueries: React.PropTypes.array.isRequired,
-  actions: React.PropTypes.object.isRequired,
-  activeSouthPaneTab: React.PropTypes.string,
+  editorQueries: PropTypes.array.isRequired,
+  dataPreviewQueries: PropTypes.array.isRequired,
+  actions: PropTypes.object.isRequired,
+  activeSouthPaneTab: PropTypes.string,
+  height: PropTypes.number,
 };
 
 const defaultProps = {
@@ -24,40 +27,11 @@ const defaultProps = {
 };
 
 class SouthPane extends React.PureComponent {
-  constructor(props) {
-    super(props);
-    this.state = {
-      innerTabHeight: this.getInnerTabHeight(),
-    };
-  }
-  getInnerTabHeight() {
-    // hack to get height the tab container so it can be fixed and scroll in place
-    // calculate inner tab height
-
-    // document.getElementById('brace-editor').getBoundingClientRect().height;
-    const sqlEditorHeight = 192;
-
-    // document.getElementById('js-sql-toolbar').getBoundingClientRect().height;
-    const sqlToolbar = 30;
-
-    // document.getElementsByClassName('nav-tabs')[0].getBoundingClientRect().height * 2;
-    const tabsHeight = 88;
-
-    // document.getElementsByTagName('header')[0].getBoundingClientRect().height;
-    const headerHeight = 59;
-
-    const sum =
-      sqlEditorHeight +
-      sqlToolbar +
-      tabsHeight +
-      headerHeight;
-
-    return window.innerHeight - sum - 95;
-  }
   switchTab(id) {
     this.props.actions.setActiveSouthPaneTab(id);
   }
   render() {
+    const innerTabHeight = this.props.height - 55;
     let latestQuery;
     const props = this.props;
     if (props.editorQueries.length > 0) {
@@ -71,16 +45,16 @@ class SouthPane extends React.PureComponent {
           search
           query={latestQuery}
           actions={props.actions}
-          resultSetHeight={this.state.innerTabHeight}
+          height={innerTabHeight}
         />
       );
     } else {
-      results = <Alert bsStyle="info">Run a query to display results here</Alert>;
+      results = <Alert bsStyle="info">{t('Run a query to display results here')}</Alert>;
     }
 
-    const dataPreviewTabs = props.dataPreviewQueries.map((query) => (
+    const dataPreviewTabs = props.dataPreviewQueries.map(query => (
       <Tab
-        title={`Preview for ${query.tableName}`}
+        title={t('Preview for %s', query.tableName)}
         eventKey={query.id}
         key={query.id}
       >
@@ -90,7 +64,7 @@ class SouthPane extends React.PureComponent {
           csv={false}
           actions={props.actions}
           cache
-          resultSetHeight={this.state.innerTabHeight}
+          height={innerTabHeight}
         />
       </Tab>
     ));
@@ -104,16 +78,16 @@ class SouthPane extends React.PureComponent {
           onSelect={this.switchTab.bind(this)}
         >
           <Tab
-            title="Results"
+            title={t('Results')}
             eventKey="Results"
           >
             {results}
           </Tab>
           <Tab
-            title="Query History"
+            title={t('Query History')}
             eventKey="History"
           >
-            <div style={{ height: `${this.state.innerTabHeight}px`, overflow: 'scroll' }}>
+            <div style={{ height: `${innerTabHeight}px`, overflow: 'scroll' }}>
               <QueryHistory queries={props.editorQueries} actions={props.actions} />
             </div>
           </Tab>

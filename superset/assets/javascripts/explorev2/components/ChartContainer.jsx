@@ -110,15 +110,11 @@ class ChartContainer extends React.PureComponent {
         // return filter objects from viz.formData
         {}
       ),
-      adddrilldown: () => {},
-      drill: () => {},
+
       addFilter: () => {},
-      hasNext: () => {},
+
       removeFilter: () => {},
-      excludeDrillDownCol: () => {},
-      drillDownFilters: () => {},
-      currentLevel: () => {},
-      readDrillDowns: () => {},
+
       done: () => {},
       clearError: () => {
         // no need to do anything here since Alert is closable

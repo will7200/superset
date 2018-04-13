@@ -1,6 +1,8 @@
 /* global notify */
 import shortid from 'shortid';
 import { now } from '../modules/dates';
+import { t } from '../locales';
+
 const $ = require('jquery');
 
 export const RESET_STATE = 'RESET_STATE';
@@ -18,7 +20,10 @@ export const QUERY_EDITOR_SET_SCHEMA = 'QUERY_EDITOR_SET_SCHEMA';
 export const QUERY_EDITOR_SET_TITLE = 'QUERY_EDITOR_SET_TITLE';
 export const QUERY_EDITOR_SET_AUTORUN = 'QUERY_EDITOR_SET_AUTORUN';
 export const QUERY_EDITOR_SET_SQL = 'QUERY_EDITOR_SET_SQL';
+export const QUERY_EDITOR_SET_TEMPLATE_PARAMS = 'QUERY_EDITOR_SET_TEMPLATE_PARAMS';
 export const QUERY_EDITOR_SET_SELECTED_TEXT = 'QUERY_EDITOR_SET_SELECTED_TEXT';
+export const QUERY_EDITOR_PERSIST_HEIGHT = 'QUERY_EDITOR_PERSIST_HEIGHT';
+
 export const SET_DATABASES = 'SET_DATABASES';
 export const SET_ACTIVE_QUERY_EDITOR = 'SET_ACTIVE_QUERY_EDITOR';
 export const SET_ACTIVE_SOUTHPANE_TAB = 'SET_ACTIVE_SOUTHPANE_TAB';
@@ -36,6 +41,10 @@ export const REMOVE_DATA_PREVIEW = 'REMOVE_DATA_PREVIEW';
 export const CHANGE_DATA_PREVIEW_ID = 'CHANGE_DATA_PREVIEW_ID';
 export const SAVE_QUERY = 'SAVE_QUERY';
 
+export const CREATE_DATASOURCE_STARTED = 'CREATE_DATASOURCE_STARTED';
+export const CREATE_DATASOURCE_SUCCESS = 'CREATE_DATASOURCE_SUCCESS';
+export const CREATE_DATASOURCE_FAILED = 'CREATE_DATASOURCE_FAILED';
+
 export function resetState() {
   return { type: RESET_STATE };
 }
@@ -46,8 +55,8 @@ export function saveQuery(query) {
     type: 'POST',
     url,
     data: query,
-    success: () => notify.success('Your query was saved'),
-    error: () => notify.error('Your query could not be saved'),
+    success: () => notify.success(t('Your query was saved')),
+    error: () => notify.error(t('Your query could not be saved')),
     dataType: 'json',
   });
   return { type: SAVE_QUERY };
@@ -100,7 +109,7 @@ export function fetchQueryResults(query) {
         dispatch(querySuccess(query, results));
       },
       error(err) {
-        let msg = 'Failed at retrieving results from the results backend';
+        let msg = t('Failed at retrieving results from the results backend');
         if (err.responseJSON && err.responseJSON.error) {
           msg = err.responseJSON.error;
         }
@@ -113,7 +122,6 @@ export function fetchQueryResults(query) {
 export function runQuery(query) {
   return function (dispatch) {
     dispatch(startQuery(query));
-    const sqlJsonUrl = '/superset/sql_json/';
     const sqlJsonRequest = {
       client_id: query.id,
       database_id: query.dbId,
@@ -125,7 +133,9 @@ export function runQuery(query) {
       tab: query.tab,
       tmp_table_name: query.tempTableName,
       select_as_cta: query.ctas,
+      templateParams: query.templateParams,
     };
+    const sqlJsonUrl = '/superset/sql_json/' + location.search;
     $.ajax({
       type: 'POST',
       dataType: 'json',
@@ -145,10 +155,15 @@ export function runQuery(query) {
             msg = err.responseText;
           }
         }
-        if (textStatus === 'error' && errorThrown === '') {
-          msg = 'Could not connect to server';
-        } else if (msg === null) {
-          msg = `[${textStatus}] ${errorThrown}`;
+        if (msg === null) {
+          if (errorThrown) {
+            msg = `[${textStatus}] ${errorThrown}`;
+          } else {
+            msg = t('Unknown error');
+          }
+        }
+        if (msg.indexOf('CSRF token') > 0) {
+          msg = t('Your session timed out, please refresh your page and try again.');
         }
         dispatch(queryFailed(query, msg));
       },
@@ -160,15 +175,17 @@ export function postStopQuery(query) {
   return function (dispatch) {
     const stopQueryUrl = '/superset/stop_query/';
     const stopQueryRequestData = { client_id: query.id };
+    dispatch(stopQuery(query));
     $.ajax({
       type: 'POST',
       dataType: 'json',
       url: stopQueryUrl,
       data: stopQueryRequestData,
       success() {
-        if (!query.runAsync) {
-          dispatch(stopQuery(query));
-        }
+        notify.success(t('Query was stopped.'));
+      },
+      error() {
+        notify.error(t('Failed at stopping query.'));
       },
     });
   };
@@ -179,8 +196,11 @@ export function setDatabases(databases) {
 }
 
 export function addQueryEditor(queryEditor) {
-  const newQe = Object.assign({}, queryEditor, { id: shortid.generate() });
-  return { type: ADD_QUERY_EDITOR, queryEditor: newQe };
+  const newQueryEditor = {
+    ...queryEditor,
+    id: shortid.generate(),
+  };
+  return { type: ADD_QUERY_EDITOR, queryEditor: newQueryEditor };
 }
 
 export function cloneQueryToNewTab(query) {
@@ -233,6 +253,10 @@ export function queryEditorSetSql(queryEditor, sql) {
   return { type: QUERY_EDITOR_SET_SQL, queryEditor, sql };
 }
 
+export function queryEditorSetTemplateParams(queryEditor, templateParams) {
+  return { type: QUERY_EDITOR_SET_TEMPLATE_PARAMS, queryEditor, templateParams };
+}
+
 export function queryEditorSetSelectedText(queryEditor, sql) {
   return { type: QUERY_EDITOR_SET_SELECTED_TEXT, queryEditor, sql };
 }
@@ -243,6 +267,18 @@ export function mergeTable(table, query) {
 
 export function addTable(query, tableName, schemaName) {
   return function (dispatch) {
+    let table = {
+      dbId: query.dbId,
+      queryEditorId: query.id,
+      schema: schemaName,
+      name: tableName,
+    };
+    dispatch(mergeTable(Object.assign({}, table, {
+      isMetadataLoading: true,
+      isExtraMetadataLoading: true,
+      expanded: false,
+    })));
+
     let url = `/superset/table/${query.dbId}/${tableName}/${schemaName}/`;
     $.get(url, (data) => {
       const dataPreviewQuery = {
@@ -256,36 +292,33 @@ export function addTable(query, tableName, schemaName) {
         ctas: false,
       };
       // Merge table to tables in state
-      dispatch(mergeTable(
-        Object.assign(data, {
-          dbId: query.dbId,
-          queryEditorId: query.id,
-          schema: schemaName,
-          expanded: true,
-        }), dataPreviewQuery)
-      );
+      const newTable = Object.assign({}, table, data, {
+        expanded: true,
+        isMetadataLoading: false,
+      });
+      dispatch(mergeTable(newTable, dataPreviewQuery));
       // Run query to get preview data for table
       dispatch(runQuery(dataPreviewQuery));
     })
     .fail(() => {
-      dispatch(
-        addAlert({
-          msg: 'Error occurred while fetching metadata',
-          bsStyle: 'danger',
-        })
-      );
+      const newTable = Object.assign({}, table, {
+        isMetadataLoading: false,
+      });
+      dispatch(mergeTable(newTable));
+      notify.error(t('Error occurred while fetching table metadata'));
     });
 
     url = `/superset/extra_table_metadata/${query.dbId}/${tableName}/${schemaName}/`;
     $.get(url, (data) => {
-      const table = {
-        dbId: query.dbId,
-        queryEditorId: query.id,
-        schema: schemaName,
-        name: tableName,
-      };
-      Object.assign(table, data);
+      table = Object.assign({}, table, data, { isExtraMetadataLoading: false });
       dispatch(mergeTable(table));
+    })
+    .fail(() => {
+      const newTable = Object.assign({}, table, {
+        isExtraMetadataLoading: false,
+      });
+      dispatch(mergeTable(newTable));
+      notify.error(t('Error occurred while fetching table metadata'));
     });
   };
 }
@@ -327,6 +360,10 @@ export function refreshQueries(alteredQueries) {
   return { type: REFRESH_QUERIES, alteredQueries };
 }
 
+export function persistEditorHeight(queryEditor, currentHeight) {
+  return { type: QUERY_EDITOR_PERSIST_HEIGHT, queryEditor, currentHeight };
+}
+
 export function popStoredQuery(urlId) {
   return function (dispatch) {
     $.ajax({
@@ -335,7 +372,7 @@ export function popStoredQuery(urlId) {
       success: (data) => {
         const newQuery = JSON.parse(data);
         const queryEditorProps = {
-          title: newQuery.title ? newQuery.title : 'shared query',
+          title: newQuery.title ? newQuery.title : t('shared query'),
           dbId: newQuery.dbId ? parseInt(newQuery.dbId, 10) : null,
           schema: newQuery.schema ? newQuery.schema : null,
           autorun: newQuery.autorun ? newQuery.autorun : false,
@@ -343,7 +380,7 @@ export function popStoredQuery(urlId) {
         };
         dispatch(addQueryEditor(queryEditorProps));
       },
-      error: () => notify.error("The query couldn't be loaded"),
+      error: () => notify.error(t('The query couldn\'t be loaded')),
     });
   };
 }
@@ -356,14 +393,49 @@ export function popSavedQuery(saveQueryId) {
         const sq = data.result;
         const queryEditorProps = {
           title: sq.label,
-          dbId: sq.db_id,
+          dbId: sq.db_id ? parseInt(sq.db_id, 10) : null,
           schema: sq.schema,
           autorun: false,
           sql: sq.sql,
         };
         dispatch(addQueryEditor(queryEditorProps));
       },
-      error: () => notify.error("The query couldn't be loaded"),
+      error: () => notify.error(t('The query couldn\'t be loaded')),
+    });
+  };
+}
+
+export function createDatasourceStarted() {
+  return { type: CREATE_DATASOURCE_STARTED };
+}
+export function createDatasourceSuccess(response) {
+  const data = JSON.parse(response);
+  const datasource = `${data.table_id}__table`;
+  return { type: CREATE_DATASOURCE_SUCCESS, datasource };
+}
+export function createDatasourceFailed(err) {
+  return { type: CREATE_DATASOURCE_FAILED, err };
+}
+
+export function createDatasource(vizOptions, context) {
+  return (dispatch) => {
+    dispatch(createDatasourceStarted());
+
+    return $.ajax({
+      type: 'POST',
+      url: '/superset/sqllab_viz/',
+      async: false,
+      data: {
+        data: JSON.stringify(vizOptions),
+      },
+      context,
+      dataType: 'json',
+      success: (resp) => {
+        dispatch(createDatasourceSuccess(resp));
+      },
+      error: () => {
+        dispatch(createDatasourceFailed(t('An error occurred while creating the data source')));
+      },
     });
   };
 }

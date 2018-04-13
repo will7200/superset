@@ -1,6 +1,41 @@
 /* eslint camelcase: 0 */
-const d3 = require('d3');
-const $ = require('jquery');
+import d3 from 'd3';
+import $ from 'jquery';
+
+import { formatDate, UTC } from './dates';
+
+const siFormatter = d3.format('.3s');
+
+export function defaultNumberFormatter(n) {
+  let si = siFormatter(n);
+  // Removing trailing `.00` if any
+  if (si.slice(-1) < 'A') {
+    si = parseFloat(si).toString();
+  }
+  return si;
+}
+
+export function d3FormatPreset(format) {
+  // like d3.format, but with support for presets like 'smart_date'
+  if (format === 'smart_date') {
+    return formatDate;
+  }
+  if (format) {
+    return d3.format(format);
+  }
+  return defaultNumberFormatter;
+}
+export const d3TimeFormatPreset = function (format) {
+  const effFormat = format || 'smart_date';
+  if (effFormat === 'smart_date') {
+    return formatDate;
+  }
+  const f = d3.time.format(effFormat);
+  return function (dttm) {
+    const d = UTC(new Date(dttm));
+    return f(d);
+  };
+};
 
 /*
   Utility function that takes a d3 svg:text selection and a max width, and splits the
@@ -99,8 +134,11 @@ export function toggleCheckbox(apiUrlPrefix, selector) {
  */
 export const fixDataTableBodyHeight = function ($tableDom, height) {
   const headHeight = $tableDom.find('.dataTables_scrollHead').height();
-  const pagination = $tableDom.find('.dataTables_paginate').height()
-  $tableDom.find('.dataTables_scrollBody').css('max-height', height - headHeight - pagination - 50);
+  const filterHeight = $tableDom.find('.dataTables_filter').height() || 0;
+  const pageLengthHeight = $tableDom.find('.dataTables_length').height() || 0;
+  const paginationHeight = $tableDom.find('.dataTables_paginate').height() || 0;
+  const controlsHeight = (pageLengthHeight > filterHeight) ? pageLengthHeight : filterHeight;
+  $tableDom.find('.dataTables_scrollBody').css('max-height', height - headHeight - controlsHeight - paginationHeight);
 };
 
 export function d3format(format, number) {
@@ -147,8 +185,8 @@ export function formatSelectOptionsForRange(start, end) {
 }
 
 export function formatSelectOptions(options) {
-  return options.map((opt) =>
-     [opt, opt.toString()]
+  return options.map(opt =>
+     [opt, opt.toString()],
   );
 }
 
@@ -193,15 +231,7 @@ export function customizeToolTip(chart, xAxisFormatter, yAxisFormatters) {
   });
 }
 
-export function getTextWidth(text, fontDetails) {
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  context.font = fontDetails;
-  const metrics = context.measureText(text);
-  return metrics.width;
-}
-
-export function initJQueryAjaxCSRF() {
+export function initJQueryAjax() {
   // Works in conjunction with a Flask-WTF token as described here:
   // http://flask-wtf.readthedocs.io/en/stable/csrf.html#javascript-requests
   const token = $('input#csrf_token').val();
@@ -214,4 +244,37 @@ export function initJQueryAjaxCSRF() {
       },
     });
   }
+}
+
+export function tryNumify(s) {
+  // Attempts casting to Number, returns string when failing
+  const n = Number(s);
+  if (isNaN(n)) {
+    return s;
+  }
+  return n;
+}
+
+export function getParam(name) {
+  /* eslint no-useless-escape: 0 */
+  const formattedName = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+  const regex = new RegExp('[\\?&]' + formattedName + '=([^&#]*)');
+  const results = regex.exec(location.search);
+  return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+}
+
+export function mainMetric(savedMetrics) {
+  // Using 'count' as default metric if it exists, otherwise using whatever one shows up first
+  let metric;
+  if (savedMetrics && savedMetrics.length > 0) {
+    savedMetrics.forEach((m) => {
+      if (m.metric_name === 'count') {
+        metric = 'count';
+      }
+    });
+    if (!metric) {
+      metric = savedMetrics[0].metric_name;
+    }
+  }
+  return metric;
 }

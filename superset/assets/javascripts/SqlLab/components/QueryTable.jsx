@@ -1,4 +1,5 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 import moment from 'moment';
 import { Table } from 'reactable';
@@ -8,16 +9,17 @@ import VisualizeModal from './VisualizeModal';
 import ResultSet from './ResultSet';
 import ModalTrigger from '../../components/ModalTrigger';
 import HighlightedSql from './HighlightedSql';
-import { STATE_BSSTYLE_MAP } from '../constants';
 import { fDuration } from '../../modules/dates';
-import { storeQuery } from '../../../utils/common';
+import { storeQuery } from '../../utils/common';
+import QueryStateLabel from './QueryStateLabel';
+import { t } from '../../locales';
 
 const propTypes = {
-  columns: React.PropTypes.array,
-  actions: React.PropTypes.object,
-  queries: React.PropTypes.array,
-  onUserClicked: React.PropTypes.func,
-  onDbClicked: React.PropTypes.func,
+  columns: PropTypes.array,
+  actions: PropTypes.object,
+  queries: PropTypes.array,
+  onUserClicked: PropTypes.func,
+  onDbClicked: PropTypes.func,
 };
 const defaultProps = {
   columns: ['started', 'duration', 'rows'],
@@ -44,7 +46,7 @@ class QueryTable extends React.PureComponent {
   openQuery(dbId, schema, sql) {
     const newQuery = {
       dbId,
-      title: 'Untitled Query',
+      title: t('Untitled Query'),
       schema,
       sql,
     };
@@ -109,7 +111,7 @@ class QueryTable extends React.PureComponent {
             className="btn btn-link btn-xs"
             onClick={this.openQuery.bind(this, q.dbId, q.schema, q.sql)}
           >
-            <i className="fa fa-external-link" />Open in SQL Editor
+            <i className="fa fa-external-link" />{t('Open in SQL Editor')}
           </button>
         </div>
       );
@@ -128,20 +130,22 @@ class QueryTable extends React.PureComponent {
                 bsStyle="info"
                 style={{ cursor: 'pointer' }}
               >
-                view results
+                {t('view results')}
               </Label>
             )}
-            modalTitle={'Data preview'}
+            modalTitle={t('Data preview')}
             beforeOpen={this.openAsyncResults.bind(this, query)}
             onExit={this.clearQueryResults.bind(this, query)}
-            modalBody={<ResultSet showSql query={query} actions={this.props.actions} />}
+            modalBody={
+              <ResultSet showSql query={query} actions={this.props.actions} height={400} />
+            }
           />
         );
       } else {
         // if query was run using ctas and force_ctas_schema was set
         // tempTable will have the schema
         const schemaUsed = q.ctas && q.tempTable && q.tempTable.includes('.') ? '' : q.schema;
-        q.output = [schemaUsed, q.tempTable].filter((v) => (v)).join('.');
+        q.output = [schemaUsed, q.tempTable].filter(v => (v)).join('.');
       }
       q.progress = (
         <ProgressBar
@@ -161,9 +165,7 @@ class QueryTable extends React.PureComponent {
       }
       q.state = (
         <div>
-          <span className={'m-r-3 label label-' + STATE_BSSTYLE_MAP[q.state]}>
-            {q.state}
-          </span>
+          <QueryStateLabel query={query} />
           {errorTooltip}
         </div>
       );
@@ -171,24 +173,24 @@ class QueryTable extends React.PureComponent {
         <div style={{ width: '75px' }}>
           <Link
             className="fa fa-line-chart m-r-3"
-            tooltip="Visualize the data out of this query"
+            tooltip={t('Visualize the data out of this query')}
             onClick={this.showVisualizeModal.bind(this, query)}
           />
           <Link
             className="fa fa-pencil m-r-3"
             onClick={this.restoreSql.bind(this, query)}
-            tooltip="Overwrite text in editor with a query on this table"
+            tooltip={t('Overwrite text in editor with a query on this table')}
             placement="top"
           />
           <Link
             className="fa fa-plus-circle m-r-3"
             onClick={this.openQueryInNewTab.bind(this, query)}
-            tooltip="Run query in a new tab"
+            tooltip={t('Run query in a new tab')}
             placement="top"
           />
           <Link
             className="fa fa-trash m-r-3"
-            tooltip="Remove query from log"
+            tooltip={t('Remove query from log')}
             onClick={this.removeQuery.bind(this, query)}
           />
         </div>
